@@ -1,12 +1,12 @@
 module NCTiles
 
-using NCDatasets
+using NCDatasets,NetCDF
 
 greet() = print("Hello World!")
 
 include("writenctiles.jl")
 
-export NCvar, Bindata, readbin
-export createfile, addDim, addData, addDimData
+export NCvar, Bindata, NCData, readbin
+export createfile, addDim, addVar, addData, addDimData, readncfile
 
 end # module

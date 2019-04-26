@@ -43,6 +43,12 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 deps = ["LinearAlgebra", "Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[Formatting]]
+deps = ["Compat"]
+git-tree-sha1 = "289003271ce9c8194c1ce56a3c433f1c51841125"
+uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
+version = "0.3.5"
+
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -84,6 +90,12 @@ deps = ["BinDeps", "Compat", "CondaBinDeps", "DataStructures", "Dates", "Libdl",
 git-tree-sha1 = "9d0716b704c5cd142fe2c1879ffa083d292a0a42"
 uuid = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 version = "0.9.0"
+
+[[NetCDF]]
+deps = ["BinDeps", "CondaBinDeps", "Formatting", "Libdl", "Random", "Test"]
+git-tree-sha1 = "6497cb9cb80aa5b3bb6d05b21abc924cb0ca554c"
+uuid = "30363a11-5582-574a-97bb-aa9a979735b9"
+version = "0.7.3"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
