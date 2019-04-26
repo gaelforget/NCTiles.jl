@@ -1,8 +1,9 @@
 module NCTiles
 
-using NCDatasets,NetCDF
+using NetCDF, MeshArrays, Printf, NCDatasets
 
-greet() = print("Hello World!")
+include("utilities.jl")
+export read_nctiles
 
 include("writenctiles.jl")
 

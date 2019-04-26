@@ -14,7 +14,7 @@ f_missval = get(fileatts,"missing_value",NaN)
 f_ff = get(fileatts,"itile",1)
 f_ntile = get(fileatts,"ntile",1)
 
-filename = "test3.nc"
+filename = "ex2.nc"
 
 # Create the NetCDF file and populate with dimension and field info
 ds,fieldvars,dimlist = createfile(filename,ncvars,README,fillval = f_fillval,missval=f_missval,ff=f_ff,ntile=f_ntile)
