@@ -1,5 +1,8 @@
 module NCTiles
 
-greet() = print("Hello World!")
+using NetCDF, MeshArrays, Printf
+
+include("utilities.jl")
+export read_nctiles
 
 end # module
