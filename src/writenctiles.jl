@@ -29,7 +29,8 @@ end
 """
     NCData
 
-Data structure containing information needed to read netcdf files (?).
+Data structure containing information needed to read netcdf files.
+Currently only supports NCDatasets as a backend.
 """
 struct NCData
     fname::AbstractString
@@ -67,7 +68,8 @@ end
 """
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
-Read netcdf file as specified in NCData argument.
+Read netcdf file as specified in `NCData` argument. Optional
+argument `i` can be used to read a specific records / times.
 """
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
@@ -148,7 +150,8 @@ end
 """
     addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
-Fill variable with data in netcdf file (`NCDatasets.jl` backend).
+Fill variable with data in netcdf file. Work with both backends 
+(`NCDatasets.jl` or `NetCDF.jl`).
 """
 function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
     isBinData = isa(var.values,Bindata)
