@@ -1,9 +1,9 @@
 using NCTiles,NCDatasets,NetCDF
 
 # Point to interpolated 2D Data
-interpdir = "../../../DarwinModelOutputSamples/ptr/diags_interp_20190326_1256/"
+examplesdir = "examples/"
 selectfields = ["Chl050"]
-fnames = interpdir*selectfields[1]*'/'.*filter(x -> occursin(".data",x), readdir(interpdir*selectfields[1]))
+fnames = examplesdir*'/'.*filter(x -> occursin(".data",x), readdir(examplesdir))
 
 # Hard coding these for now
 prec = Float32
@@ -15,7 +15,7 @@ time_steps = timeinterval/2:timeinterval:timeinterval*nsteps
 longname = "Average chlorophyll concentration (top 50m)"
 units = "mg Chl"
 
-README = readlines("README")
+README = readlines(examplesdir*"README")
 
 # Using NCDatasets
 
@@ -31,7 +31,7 @@ fielddata = Bindata(fnames,prec,(n1,n2))
 field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname),NCDatasets)
 
 # Create the NetCDF file and populate with dimension and field info
-ds,fldvar,dimlist = createfile("ex1_NCDatasets.nc",field,README)
+ds,fldvar,dimlist = createfile(examplesdir*"ex1_NCDatasets.nc",field,README)
 
 # Add field and dimension data
 addData(fldvar,field)
@@ -56,12 +56,10 @@ field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname)
 using NetCDF
 
 # Create the NetCDF file and populate with dimension and field info, as well as dimension data
-ncfile,fldvar,dimlist = createfile("ex1_NetCDF.nc",field,README)
+ncfile,fldvar,dimlist = createfile(examplesdir*"ex1_NetCDF.nc",field,README)
 
 # Add field data
 addData(fldvar,field)
 
 # Close the file
 NetCDF.close(ncfile)
-
-

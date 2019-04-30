@@ -1,5 +1,11 @@
 using NCDatasets,NetCDF,Dates
 
+"""
+    NCvar
+
+Data structure containing information needed to write a NetCDF file. This
+includes a list of filenames (see `Bindata`) if the data is not loaded into memory.
+"""
 struct NCvar
     name::String
     units::String
@@ -9,12 +15,23 @@ struct NCvar
     backend::Module
 end
 
+"""
+    Bindata
+
+Data structure containing information needed to read binary files (fnames, precision, iosize).
+"""
 struct Bindata # Pointer to data stored in binary files- contains info needed to read in
     fnames::Union{Array{String},String}
     precision::Type
     iosize::Tuple
 end
 
+"""
+    NCData
+
+Data structure containing information needed to read netcdf files.
+Currently only supports NCDatasets as a backend.
+"""
 struct NCData
     fname::AbstractString
     varname::AbstractString
@@ -22,6 +39,11 @@ struct NCData
     precision::Type
 end
 
+"""
+    readbin(fname::String,prec::Type,iosize::Tuple)
+
+Read binary file to memory (resembles `read_bin` in MeshArrays)
+"""
 function readbin(fname::String,prec::Type,iosize::Tuple)
     n1,n2 = iosize
 
@@ -43,6 +65,12 @@ function readbin(fname::String,prec::Type,iosize::Tuple)
 
 end
 
+"""
+    readncdata(var::NCData,i::Union{Colon,Integer}=:)
+
+Read netcdf file as specified in `NCData` argument. Optional
+argument `i` can be used to read a specific records / times.
+"""
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
     ndims = length(size(ds[var.varname]))
@@ -62,16 +90,31 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     return values
 end
 
+"""
+    addDim(ds::NCDatasets.Dataset,dimvar::NCvar)
+
+Add dimension to netcdf file (`NCDatasets.jl` backend).
+"""
 function addDim(ds::NCDatasets.Dataset,dimvar::NCvar) # NCDatasets
     defDim(ds,dimvar.name,dimvar.dims[1])
 end
 
+"""
+    addDim(dimvar::NCvar)
+
+Add dimension to netcdf file (`NetCDF.jl` backend).
+"""
 function addDim(dimvar::NCvar) #NetCDF
     NcDim(dimvar.name,collect(dimvar.values),
         atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts),
         unlimited = dimvar.dims==Inf)
 end
 
+"""
+    addVar(ds::NCDatasets.Dataset,field::NCvar)
+
+Add variable to netcdf file (`NCDatasets.jl` backend).
+"""
 function addVar(ds::NCDatasets.Dataset,field::NCvar)
     atts = merge(Dict(("units" =>field.units)),field.atts)
     if isa(field.values,Array)
@@ -81,19 +124,35 @@ function addVar(ds::NCDatasets.Dataset,field::NCvar)
     end
 end
 
+"""
+    addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
+
+Add variable to netcdf file (`NetCDF.jl` backend).
+"""
 function addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts), 
+        atts = merge(Dict(("units" =>field.units)),field.atts),
         t = field.values.precision)
 end
 
+"""
+    addVar(field::NCvar)
+
+Add variable to netcdf file (`NetCDF.jl` backend).
+"""
 function addVar(field::NCvar)
     dimlist = addDim.(field.dims)
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts))#, 
+        atts = merge(Dict(("units" =>field.units)),field.atts))#,
         #t = field.values.precision)
 end
 
+"""
+    addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
+
+Fill variable with data in netcdf file. Work with both backends 
+(`NCDatasets.jl` or `NetCDF.jl`).
+"""
 function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
     isBinData = isa(var.values,Bindata)
     isNCData = isa(var.values,NCData)
@@ -112,12 +171,12 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
             else
                 nsteps = 1
             end
-            
+
         else
             ndims = length(size(var.values[1]))
             nsteps = length(var.values)
         end
-        
+
         for i = 1:nsteps
             if isBinData
                 v0 = readbin(var.values.fnames[i],var.values.precision,var.values.iosize)
@@ -153,15 +212,25 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
 end
 
+"""
+    addDimData(ds,dimvar::NCvar)
+
+To be continued...
+"""
 function addDimData(ds,dimvar::NCvar)
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts)
     defVar(ds,dimvar.name,dimvar.values,(dimvar.name,),attrib=atts)
 end
 
+"""
+    createfile(filename, field, README; fillval=NaN, missval=NaN, ff=1, ntile=1)
+
+Create netcdf file using either backend (`NCDatasets.jl` or `NetCDF.jl`).
+"""
 function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, README; fillval=NaN, missval=NaN, ff=1, ntile=1)
-    
+
     if isa(field,Dict{AbstractString,NCvar})
-        
+
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
         dims = filter( d -> isa(d,NCvar),dims)
         field = collect(values(field))
@@ -176,7 +245,7 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
             field = [field]
         end
     end
-    
+
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
                 "Conventions" => "CF-1.6",
                 "description" => fieldname*" -- "*README[1]],
@@ -228,8 +297,11 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
 
 end
 
+"""
+    readncfile(fname,backend::Module=NCDatasets)
 
-
+Read netcdf file using either backend (`NCDatasets.jl` or `NetCDF.jl`).
+"""
 function readncfile(fname,backend::Module=NCDatasets)
 
     ds = Dataset(fname)
@@ -299,6 +371,12 @@ function readncfile(fname,backend::Module=NCDatasets)
 end
 
 # Helpers for finding time dimension
+
+"""
+    istimedim(d::NCvar)
+
+To be continued...
+"""
 function istimedim(d::NCvar)
 
     timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
@@ -306,15 +384,30 @@ function istimedim(d::NCvar)
 
 end
 
+"""
+    findtimedim(v::NCvar)
+
+To be continued...
+"""
 function findtimedim(v::NCvar)
     return findall(istimedim.(v.dims))[1]
 end
 
+"""
+    hastimedim(v::NCvar)
+
+To be continued...
+"""
 function hastimedim(v::NCvar)
     ncvardim = isa.(v.dims,NCvar)
     return any(ncvardim) && any(istimedim.(v.dims[ncvardim]))
 end
 
+"""
+    hastimedim(dims::Array{NCvar})
+
+To be continued...
+"""
 function hastimedim(dims::Array{NCvar})
     return any(istimedim.(dims))
 end
