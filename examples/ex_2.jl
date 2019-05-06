@@ -1,7 +1,7 @@
 using NCTiles,NCDatasets
 
 # Point to NetCDF file
-interpdir = "/Users/Lauren/Documents/eaps/DarwinModelOutputSamples/tests/state_3d_set1_THETA_run/"
+interpdir = "../../../DarwinModelOutputSamples/tests/state_3d_set1_THETA_run/"
 selectfields = ["THETA"]
 fname = interpdir*"THETA.0009.nc"
 

@@ -22,6 +22,25 @@ struct NCData
     precision::Type
 end
 
+# Functions to get single time step
+function getindex(v::NCvar,i::Integer)
+    NCvar(v.name,v.units,v.dims,v.values[i],v.atts,v.backend)
+end
+
+function getindex(d::Bindata,i) # Gets file at time index i
+    if isa(d.fnames,Array)
+        newfnames = d.fnames[i]
+    else
+        newfnames = d.fnames
+    end
+
+    Bindata(newfnames,d.precision,d.iosize)
+end
+
+function getindex(d::NCData,i) # Gets data at time index i
+    readncdata(d,i)
+end
+
 function readbin(fname::String,prec::Type,iosize::Tuple)
     n1,n2 = iosize
 
@@ -102,7 +121,13 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
         if isBinData
             ndims = length(var.values.iosize)
-            nsteps = length(var.values.fnames)
+            if isa(var.values.fnames,Array)
+                nsteps = length(var.values.fnames)
+                fnames = var.values.fnames
+            else
+                nsteps = 1
+                fnames = [var.values.fnames]
+            end
         elseif isNCData
             ndims = length(var.dims)
             if hastimedim(var)
@@ -120,7 +145,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
         
         for i = 1:nsteps
             if isBinData
-                v0 = readbin(var.values.fnames[i],var.values.precision,var.values.iosize)
+                v0 = readbin(fnames[i],var.values.precision,var.values.iosize)
             elseif isNCData
                 v0 = readncdata(var.values,i)
             else
@@ -317,4 +342,54 @@ end
 
 function hastimedim(dims::Array{NCvar})
     return any(istimedim.(dims))
+end
+
+function parsemeta(metafile)
+
+    meta = read(metafile,String)
+    meta = split(meta,";\n")
+    meta = meta[isempty.(meta).==false]
+    meta = replace.(meta,Ref(",\n"=>";"))
+    meta = replace.(meta,Ref("\n"=>""))
+    meta = replace.(meta,Ref("}"=>"]"))
+    meta = replace.(meta,Ref("{"=>"["))
+    meta = replace.(meta,Ref(" "=>""))
+    meta = replace.(meta,Ref("'"=>"\""))
+    meta = replace.(meta,Ref(";]"=>"]"))
+    meta = replace.(meta,Ref(","=>" "))
+
+    meta = split.(meta,"=")
+
+    metaDict = Dict{String,Any}(m[1] => m[2] for m in meta)
+
+    for k in keys(metaDict)
+        val = eval(Meta.parse(metaDict[k]))
+        if length(val) == 1
+            val = val[1]
+        end
+        metaDict[k] = val
+    end
+    metaDict["dataprec"] = titlecase(metaDict["dataprec"])
+    return metaDict
+
+end
+
+using Printf
+function readAvailDiagnosticsLog(fname,fldname)
+    availdiags = readlines(fname)
+    line = availdiags[findall(occursin.(@sprintf("%-8s",fldname),availdiags))[1]]
+
+    line = split(line,'|')
+    line = lstrip.(rstrip.(line))
+
+    diagInfo = Dict([
+        "diagNum" => parse(Int,line[1]),
+        "fldname" => line[2],
+        "levs" => parse(Int,line[3]),
+        "mate" => line[4],
+        "code" => line[5],
+        "units" => line[6],
+        "title" => line[7]
+    ])
+
 end
