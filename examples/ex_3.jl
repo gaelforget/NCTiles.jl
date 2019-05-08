@@ -7,6 +7,11 @@ fnameprefix = ncdir*"/darwin_v0.2_cs510"
 groups = ["Nutrients","Bulk_Ecosystem_Characteristcs","Phytoplankton_Functional_Types","Ocean_Color"]
 README = readlines("data/cs510/README")
 
+rename = Dict(["TRAC05" => "PO4",
+"TRAC06" => "SiO2",
+"TRAC07" => "FeT", 
+"TRAC19" => "O2"])
+
 if !isdir(ncdir)
     mkpath(ncdir)
 end
@@ -22,8 +27,8 @@ dep = -1 .* collect([-5 -15 -25 -35 -45 -55 -65 -75.0049972534180 -85.0250015258
 n1,n2,n3 = (length(lon),length(lat),length(dep))
 
 dimdict = Dict{AbstractString,NCvar}([
-    "lon_c" => NCvar("lon_c","degrees east",size(lon),lon,Dict("long_name" => "longitude"),NCDatasets),
-    "lat_c" => NCvar("lat_c","degrees north",size(lat),lat,Dict("long_name" => "latitude"),NCDatasets),
+    "lon_c" => NCvar("lon_c","degrees_east",size(lon),lon,Dict("long_name" => "longitude"),NCDatasets),
+    "lat_c" => NCvar("lat_c","degrees_north",size(lat),lat,Dict("long_name" => "latitude"),NCDatasets),
     "dep_c" => NCvar("dep_c","m",size(dep),dep,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NCDatasets),
     "time" => NCvar("time",timeunits,Inf,timesteps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
 ])
@@ -45,6 +50,10 @@ for group in groups
         metafile = parsemeta(metafile)
         diaginfo = readAvailDiagnosticsLog(availdiagsfname,fldname)
 
+        # Rename if needed
+        if any(occursin.(fldname,collect(keys(rename))))
+            fldname = rename[fldname]
+        end
 
         prec = eval(Meta.parse(metafile["dataprec"]))
         units = diaginfo["units"]
@@ -67,7 +76,7 @@ for group in groups
     end
 
     # Set up NCvars
-    filename = ncdir*"/"*group*".nc"
+    filename = join((fnameprefix,lowercase(group)),"_")*".nc"
     
     # Create the NetCDF file and populate with dimension and field info
     ds,fieldvars,dimlist = createfile(filename,flds,README)

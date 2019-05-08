@@ -191,11 +191,11 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
         dims = filter( d -> isa(d,NCvar),dims)
         field = collect(values(field))
 
-        fieldname = field[findall(hastimedim.(field))[1]].name
+        fieldnames = getfield.(field[findall(hastimedim.(field))],:name)
         backend = field[1].backend
     else
         dims = field.dims
-        fieldname = field.name
+        fieldnames = field.name
         backend = field.backend
         if backend == NCDatasets
             field = [field]
@@ -204,7 +204,7 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
     
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
                 "Conventions" => "CF-1.6",
-                "description" => fieldname*" -- "*README[1]],
+                "description" => join(fieldnames,",")*" -- "*README[1]],
                 [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
                 [string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
                 "_FillValue" => fillval,
@@ -286,7 +286,7 @@ function readncfile(fname,backend::Module=NCDatasets)
                     if !haskey(dims,d) # Add the dimension
                         d_units = get(ds[d].attrib,"units","")
                         d_dims = length(ds[d])
-                        d_values = NCData(fname,d,backend) # Pointer to this variable in the file
+                        d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
                         d_atts = Dict(ds[d].attrib)
                         dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
                     end
