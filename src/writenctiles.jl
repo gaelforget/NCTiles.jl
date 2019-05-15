@@ -33,7 +33,7 @@ function getindex(d::Bindata,i) # Gets file at time index i
     else
         newfnames = d.fnames
     end
-
+    
     Bindata(newfnames,d.precision,d.iosize)
 end
 
@@ -43,29 +43,29 @@ end
 
 function readbin(fname::String,prec::Type,iosize::Tuple)
     n1,n2 = iosize
-
+    
     if prec == Float64
         reclen = 6
     else
         reclen=4
     end
-
+    
     n3=Int64(stat(fname).size/n1/n2/reclen)
-
+    
     fid = open(fname)
     field = Array{prec,1}(undef,(n1*n2*n3))
     read!(fid,field)
     field = hton.(field)
-
+    
     n3>1 ? s=(n1,n2,n3) : s=(n1,n2)
     return reshape(field,s)
-
+    
 end
 
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
     ndims = length(size(ds[var.varname]))
-
+    
     if ndims == 1
         values = ds[var.varname][i]
     elseif ndims == 2
@@ -87,12 +87,16 @@ end
 
 function addDim(dimvar::NCvar) #NetCDF
     NcDim(dimvar.name,collect(dimvar.values),
-        atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts),
-        unlimited = dimvar.dims==Inf)
+    atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts),
+    unlimited = dimvar.dims==Inf)
 end
 
 function addVar(ds::NCDatasets.Dataset,field::NCvar)
-    atts = merge(Dict(("units" =>field.units)),field.atts)
+    if ~isempty(field.units)
+        atts = merge(Dict(("units" =>field.units)),field.atts)
+    else
+        atts = field.atts
+    end
     if isa(field.values,Array)
         fieldvar = defVar(ds,field.name,field.values,tuple([f.name for f in field.dims]...),attrib=atts)
     else
@@ -101,24 +105,34 @@ function addVar(ds::NCDatasets.Dataset,field::NCvar)
 end
 
 function addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
+    if ~isempty(field.units)
+        atts = merge(Dict(("units" =>field.units)),field.atts)
+    else
+        atts = field.atts
+    end
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts), 
-        t = field.values.precision)
+    atts = atts, 
+    t = field.values.precision)
 end
 
 function addVar(field::NCvar)
     dimlist = addDim.(field.dims)
+    if ~isempty(field.units)
+        attributes = merge(Dict(("units" =>field.units)),field.atts)
+    else
+        attributes = field.atts
+    end
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts))#, 
-        #t = field.values.precision)
+    atts = attributes)#, 
+    #t = field.values.precision)
 end
 
-function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
+function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar,timesteps=0)
     isBinData = isa(var.values,Bindata)
     isNCData = isa(var.values,NCData)
-
+    
     if isBinData || isNCData ||  isa(var.values[1],Array) # Binary files or array of timesteps
-
+        
         if isBinData
             ndims = length(var.values.iosize)
             if isa(var.values.fnames,Array)
@@ -151,7 +165,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
             else
                 v0 = var.values[i]
             end
-
+            
             if ndims == 1
                 v[:,i] = v0
             elseif ndims == 2
@@ -160,7 +174,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
                 v[:,:,:,i] = v0
             end
         end
-
+        
     elseif isa(var.values[1],Number) # Single array of data- just insert it
         ndims = length(size(var.values))
         if ndims == 1
@@ -175,7 +189,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
     else
         print("Unrecognized values")
     end
-
+    
 end
 
 function addDimData(ds,dimvar::NCvar)
@@ -190,7 +204,7 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
         dims = filter( d -> isa(d,NCvar),dims)
         field = collect(values(field))
-
+        
         fieldnames = getfield.(field[findall(hastimedim.(field))],:name)
         backend = field[1].backend
     else
@@ -203,15 +217,15 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
     end
     
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
-                "Conventions" => "CF-1.6",
-                "description" => join(fieldnames,",")*" -- "*README[1]],
-                [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
-                [string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
-                "_FillValue" => fillval,
-                "missing_value" => missval,
-                "itile" => ff,
-                "ntile" => ntile])
-
+    "Conventions" => "CF-1.6",
+    "description" => join(fieldnames,",")*" -- "*README[1]],
+    [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
+    [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
+    "_FillValue" => fillval,
+    "missing_value" => missval,
+    "itile" => ff,
+    "ntile" => ntile])
+    
     if backend == NCDatasets
         ds =  Dataset(filename,"c",attrib=file_atts)
         dimlist = addDim.(Ref(ds),dims)
@@ -237,7 +251,7 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
         else
             fieldvar = getkey.(Ref(ds),[f.name for f in field])
         end
-
+        
         return ds,fieldvar,collect(values(ds.dim)) =#
         #fieldvar = Array{NcVar,1}
         dimlist = addDim.(dims)
@@ -250,18 +264,18 @@ function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, RE
         #nccreate(filename,)
         return NetCDF.create(filename,fieldvar, gatts = file_atts),fieldvar,dimlist
     end
-
+    
 end
 
 
 
 function readncfile(fname,backend::Module=NCDatasets)
-
+    
     ds = Dataset(fname)
-
+    
     dims = Dict{AbstractString,NCvar}()
     vars = Dict{AbstractString,NCvar}()
-
+    
     for k in keys(ds)
         if ~haskey(dims,k)
             k_units = get(ds[k].attrib,"units","")
@@ -302,16 +316,16 @@ function readncfile(fname,backend::Module=NCDatasets)
                 elseif hasTimeDim
                     k_values = NCData(fname,k,backend,eltype(ds[k].var[:])) # Pointer to this variable in the file
                 end
-
+                
                 if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
                     k_values = typeof(k_values[1]).(k_values)
                 end
-
+                
                 vars[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
             end
         end
     end
-
+    
     atts = ["_FillValue","missing_value","itile","ntile"]
     fileatts = Dict()
     for a in atts
@@ -325,10 +339,10 @@ end
 
 # Helpers for finding time dimension
 function istimedim(d::NCvar)
-
+    
     timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
     return any(occursin.(timeUnits,Ref(lowercase(d.units))))
-
+    
 end
 
 function findtimedim(v::NCvar)
@@ -345,7 +359,7 @@ function hastimedim(dims::Array{NCvar})
 end
 
 function parsemeta(metafile)
-
+    
     meta = read(metafile,String)
     meta = split(meta,";\n")
     meta = meta[isempty.(meta).==false]
@@ -357,11 +371,11 @@ function parsemeta(metafile)
     meta = replace.(meta,Ref("'"=>"\""))
     meta = replace.(meta,Ref(";]"=>"]"))
     meta = replace.(meta,Ref(","=>" "))
-
+    
     meta = split.(meta,"=")
-
+    
     metaDict = Dict{String,Any}(m[1] => m[2] for m in meta)
-
+    
     for k in keys(metaDict)
         val = eval(Meta.parse(metaDict[k]))
         if length(val) == 1
@@ -371,25 +385,25 @@ function parsemeta(metafile)
     end
     metaDict["dataprec"] = titlecase(metaDict["dataprec"])
     return metaDict
-
+    
 end
 
 using Printf
 function readAvailDiagnosticsLog(fname,fldname)
     availdiags = readlines(fname)
     line = availdiags[findall(occursin.(@sprintf("%-8s",fldname),availdiags))[1]]
-
+    
     line = split(line,'|')
     line = lstrip.(rstrip.(line))
-
+    
     diagInfo = Dict([
-        "diagNum" => parse(Int,line[1]),
-        "fldname" => line[2],
-        "levs" => parse(Int,line[3]),
-        "mate" => line[4],
-        "code" => line[5],
-        "units" => line[6],
-        "title" => line[7]
+    "diagNum" => parse(Int,line[1]),
+    "fldname" => line[2],
+    "levs" => parse(Int,line[3]),
+    "mate" => line[4],
+    "code" => line[5],
+    "units" => line[6],
+    "title" => line[7]
     ])
-
+    
 end
