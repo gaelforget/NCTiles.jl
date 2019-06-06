@@ -13,6 +13,11 @@ struct Bindata # Pointer to data stored in binary files- contains info needed to
     fnames::Union{Array{String},String}
     precision::Type
     iosize::Tuple
+    fldidx::Int
+end
+
+function Bindata(fnames::Union{Array{String},String},precision::Type,iosize::Tuple)
+    return Bindata(fnames,precision,iosize,1)
 end
 
 struct NCData
@@ -20,6 +25,135 @@ struct NCData
     varname::AbstractString
     backend::Module
     precision::Type
+end
+
+using MeshArrays
+struct TileData{T}
+    vals::T
+    tileinfo::Dict
+    tilesize::Tuple
+    precision::Type
+    numtiles::Int
+end
+
+function findtiles(ni,nj,grid="llc90")
+    mytiles = Dict()
+    GCMGridSpec()
+    if grid=="llc90"
+        GCMGridLoad()
+    else
+        println("Unsupported grid option")
+    end
+    mytiles["nFaces"]=MeshArrays.nFaces;
+    #mytiles.fileFormat=mygrid.fileFormat;
+    mytiles["ioSize"]=MeshArrays.ioSize;
+    %
+    XC=MeshArrays.XC;
+    YC=MeshArrays.YC;
+    XC11=copy(XC); YC11=copy(XC);
+    XCNINJ=copy(XC); YCNINJ=copy(XC);
+    iTile=copy(XC); jTile=copy(XC); tileNo=copy(XC);
+    tileCount=0;
+    for iF=1:XC11.nFaces;
+        #global tileCount,XC,YC,XC11,YC11,iTile,jTile,tileNo
+        face_XC=XC.f[iF]; face_YC=YC.f[iF];
+    #ordering convention that was used in first generation nctile files:
+    #    for ii=1:size(face_XC,1)/ni;
+    #        for jj=1:size(face_XC,2)/nj;
+    #ordering convention that is consistent with MITgcm/pkg/exch2:
+        for jj=Int.(1:size(face_XC,2)/nj);
+            for ii=Int.(1:size(face_XC,1)/ni);    
+                tileCount=tileCount+1;
+                tmp_i=(1:ni).+ni*(ii-1)
+                tmp_j=(1:nj).+nj*(jj-1)
+                tmp_XC=face_XC[tmp_i,tmp_j]
+                tmp_YC=face_YC[tmp_i,tmp_j]
+                XC11.f[iF][tmp_i,tmp_j].=tmp_XC[1,1]
+                YC11.f[iF][tmp_i,tmp_j].=tmp_YC[1,1]
+                XCNINJ.f[iF][tmp_i,tmp_j].=tmp_XC[end,end]
+                YCNINJ.f[iF][tmp_i,tmp_j].=tmp_YC[end,end]
+                iTile.f[iF][tmp_i,tmp_j]=collect(1:ni)*ones(Int,1,nj)
+                jTile.f[iF][tmp_i,tmp_j]=ones(Int,ni,1)*collect(1:nj)'
+                tileNo.f[iF][tmp_i,tmp_j]=tileCount*ones(Int,ni,nj)
+            end
+        end
+    end
+
+    mytiles["XC"] = XC;
+    mytiles["YC"] = YC;
+    mytiles["XC11"] = XC11;
+    mytiles["YC11"] = YC11;
+    mytiles["XCNINJ"] = XCNINJ;
+    mytiles["YCNINJ"] = YCNINJ;
+    mytiles["iTile"] = iTile;
+    mytiles["jTile"] = jTile;
+    mytiles["tileNo"] = tileNo;
+
+    return mytiles
+
+end
+
+function TileData(vals,tilesize::Tuple)
+    ni,nj = tilesize
+    tileinfo = findtiles(ni,nj)
+    if isa(vals,Bindata)
+        prec = vals.precision
+    else
+        prec = Float32
+    end
+    return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
+end
+
+function findidx(A,val)
+    tileidx = Dict()
+    for i = 1:A.nFaces
+        idx = findall(x->x==val,A.f[i])
+        tileidx[i] = [x for x in idx]
+    end
+    return tileidx
+end
+
+function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
+    #tilesize = tileinfo.tilesize
+    tilidx = findidx(tileinfo["tileNo"],tilenum)
+
+    is3D = length(size(fldvals)) == 3 
+
+    if is3D # has depth
+        tilfld = Array{Any,3}(nothing,0,tilesize[2],size(fldvals)[3])
+    else
+        tilfld = Array{Any,2}(nothing,0,tilesize[2])
+    end
+    for iF = 1:fldvals.nFaces
+        if ~isempty(tilidx[iF])
+            #global tilfld,tillat,tillon
+            imin = minimum(tilidx[iF])[1]; imax = maximum(tilidx[iF])[1]
+            jmin = minimum(tilidx[iF])[2]; jmax = maximum(tilidx[iF])[2]
+            if is3D
+                tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax,:]]
+            else
+                tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax]]
+            end
+        end
+    end
+
+    if is3D
+        tilfld = reshape(tilfld,tilesize[1],tilesize[2],:)
+    else
+        tilfld = reshape(tilfld,tilesize[1],tilesize[2])
+    end
+
+    return tilfld
+end
+
+function gettiles(fldvals,tilenum::Int)
+    tilesize = fldvals.tilesize
+
+    tilfld = gettile(fldvals.vals,fldvals.tileinfo,tilesize,tilenum)
+    tillat = gettile(fldvals.tileinfo["XC"],fldvals.tileinfo,fldvals.tilesize,tilenum)
+    tillon = gettile(fldvals.tileinfo["YC"],fldvals.tileinfo,fldvals.tilesize,tilenum)
+
+    return tilfld,tillat,tillon
 end
 
 # Functions to get single time step
@@ -41,7 +175,7 @@ function getindex(d::NCData,i) # Gets data at time index i
     readncdata(d,i)
 end
 
-function readbin(fname::String,prec::Type,iosize::Tuple)
+function readbin(fname::String,prec::Type,iosize::Tuple,n3=[],fldidx=1)
     n1,n2 = iosize
     
     if prec == Float64
@@ -50,11 +184,17 @@ function readbin(fname::String,prec::Type,iosize::Tuple)
         reclen=4
     end
     
-    n3=Int64(stat(fname).size/n1/n2/reclen)
-    
-    fid = open(fname)
+    if isempty(n3)
+        n3=Int64(stat(fname).size/n1/n2/reclen)
+    end
+
     field = Array{prec,1}(undef,(n1*n2*n3))
+    fid = open(fname)
+    if fldidx != 1
+        seek(fid,n1*n2*n3*(fldidx-1)*reclen)
+    end
     read!(fid,field)
+    close(fid)
     field = hton.(field)
     
     n3>1 ? s=(n1,n2,n3) : s=(n1,n2)
@@ -127,20 +267,27 @@ function addVar(field::NCvar)
     #t = field.values.precision)
 end
 
-function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar,timesteps=0)
+function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
     isBinData = isa(var.values,Bindata)
     isNCData = isa(var.values,NCData)
-    
-    if isBinData || isNCData ||  isa(var.values[1],Array) # Binary files or array of timesteps
+    isTileData = isa(var.values,TileData)
+    if isTileData
+        isBinData = isa(var.values.vals,Bindata)
+    end
+    nsteps = 1
+    if isBinData || isNCData || isTileData || isa(var.values[1],Array) # Binary files or array of timesteps
         
         if isBinData
-            ndims = length(var.values.iosize)
-            if isa(var.values.fnames,Array)
-                nsteps = length(var.values.fnames)
-                fnames = var.values.fnames
+            if isTileData && isa(var.values.vals.fnames,Array)
+                nsteps = length(var.values.vals.fnames)
             else
-                nsteps = 1
-                fnames = [var.values.fnames]
+                ndims = length(var.values.iosize)
+                if isa(var.values.fnames,Array)
+                    nsteps = length(var.values.fnames)
+                    fnames = var.values.fnames
+                else
+                    fnames = [var.values.fnames]
+                end
             end
         elseif isNCData
             ndims = length(var.dims)
@@ -148,30 +295,34 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar,timeste
                 ndims = ndims-1
                 timedimidx = findtimedim(var)
                 nsteps = var.dims[timedimidx].dims[1]
-            else
-                nsteps = 1
             end
             
-        else
+        elseif isTileData && isa(var.values.vals,Array) && isa(var.values.vals[1],gcmfaces)
+            nsteps = length(var.values.vals)
+        elseif isa(var.values,Array) && isa(var.values[1],Array)
             ndims = length(size(var.values[1]))
             nsteps = length(var.values)
         end
         
         for i = 1:nsteps
-            if isBinData
-                v0 = readbin(fnames[i],var.values.precision,var.values.iosize)
-            elseif isNCData
-                v0 = readncdata(var.values,i)
+            if isTileData
+                writetiles.(v,Ref(var),1:var.values.numtiles,Ref(i))
             else
-                v0 = var.values[i]
-            end
-            
-            if ndims == 1
-                v[:,i] = v0
-            elseif ndims == 2
-                v[:,:,i] = v0
-            elseif ndims == 3
-                v[:,:,:,i] = v0
+                if isBinData
+                    v0 = readbin(fnames[i],var.values.precision,var.values.iosize)
+                elseif isNCData
+                    v0 = readncdata(var.values,i)
+                else
+                    v0 = var.values[i]
+                end
+                
+                if ndims == 1
+                    v[:,i] = v0
+                elseif ndims == 2
+                    v[:,:,i] = v0
+                elseif ndims == 3
+                    v[:,:,:,i] = v0
+                end
             end
         end
         
@@ -192,14 +343,49 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar,timeste
     
 end
 
+function writetiles(v,var,tilenum,timeidx=1)
+    if isa(v,Array)
+        v = v[findfirst(isequal(var.name),name.(v))]
+    end
+    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
+    if isa(var.values.vals,Bindata)
+        iosize = var.values.vals.iosize
+        if isa(var.values.vals.fnames,Array)
+            fnames = var.values.vals.fnames
+        else
+            fnames = [var.values.vals.fnames]
+        end
+        v0 = convert2gcmfaces(readbin(fnames[timeidx],var.values.precision,iosize,var.values.vals.fldidx))
+    else
+        if isa(var.values.vals,gcmfaces)
+            v0 = var.values.vals
+        else
+            v0 = var.values.vals[timeidx]
+        end
+    end
+    ndims = length(v0.f[1])
+    v0 = gettile(v0,tileinfo,tilesize,tilenum)
+    #println(tilenum)
+    #println(timeidx)
+    #println(size(v0))
+    if ndims == 1
+        v[:,timeidx] = v0
+    elseif ndims == 2
+        v[:,:,timeidx] = v0
+    elseif ndims == 3
+        v[:,:,:,timeidx] = v0
+    end
+
+end
+
 function addDimData(ds,dimvar::NCvar)
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts)
     defVar(ds,dimvar.name,dimvar.values,(dimvar.name,),attrib=atts)
 end
 
-function createfile(filename, field::Union{NCvar,Dict{AbstractString,NCvar}}, README; fillval=NaN, missval=NaN, ff=1, ntile=1)
+function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; fillval=NaN, missval=NaN, ff=1, ntile=1)
     
-    if isa(field,Dict{AbstractString,NCvar})
+    if isa(field,Dict{String,NCvar})
         
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
         dims = filter( d -> isa(d,NCvar),dims)
@@ -367,17 +553,21 @@ function parsemeta(metafile)
     meta = replace.(meta,Ref("\n"=>""))
     meta = replace.(meta,Ref("}"=>"]"))
     meta = replace.(meta,Ref("{"=>"["))
-    meta = replace.(meta,Ref(" "=>""))
+    #meta = replace.(meta,Ref(" "=>""))
     meta = replace.(meta,Ref("'"=>"\""))
     meta = replace.(meta,Ref(";]"=>"]"))
     meta = replace.(meta,Ref(","=>" "))
     
     meta = split.(meta,"=")
-    
+    meta = [[replace(x[1]," "=>"") x[2]] for x in meta]
+
     metaDict = Dict{String,Any}(m[1] => m[2] for m in meta)
     
     for k in keys(metaDict)
         val = eval(Meta.parse(metaDict[k]))
+        if isa(val[1],String)
+            val = replace.(val,Ref(" "=>""))
+        end
         if length(val) == 1
             val = val[1]
         end

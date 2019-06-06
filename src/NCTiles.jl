@@ -7,9 +7,10 @@ export read_nctiles
 
 import Base: getindex
 
-export NCvar, Bindata, NCData, readbin
+export NCvar, Bindata, NCData, TileData, readbin
 export createfile, addDim, addVar, addData, addDimData,
-        readncfile, parsemeta, readAvailDiagnosticsLog
+        readncfile, parsemeta, readAvailDiagnosticsLog,
+        findtiles
         
 include("writenctiles.jl")
 
