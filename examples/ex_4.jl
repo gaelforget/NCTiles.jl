@@ -25,7 +25,7 @@ dims = [
 ]
 
 fldidx = 1:106
-@time for fidx in fldidx
+for fidx in fldidx
     global dims
     fldname = metafile["fldList"][fidx]
     diaginfo = readAvailDiagnosticsLog("available_diagnostics.log",fldname)
