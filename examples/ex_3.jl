@@ -135,7 +135,7 @@ for group in groups
 
         mydims = cat(mydims,dimdict["time"],dims=1)
 
-        fielddata = Bindata(fnames,prec,iosize)
+        fielddata = BinData(fnames,prec,iosize)
         flds[fldname] = NCvar(fldname,units,mydims,fielddata,
             Dict("long_name" => longname),NCDatasets)
 

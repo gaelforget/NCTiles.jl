@@ -7,7 +7,7 @@ using NetCDF, MeshArrays, Printf, NCDatasets
 
 import Base: getindex
 
-export NCvar, Bindata, NCData, TileData, readbin
+export NCvar, BinData, NCData, TileData, readbin
 export createfile, addDim, addVar, addData, addDimData,
         readncfile, parsemeta, readAvailDiagnosticsLog
         

@@ -1,5 +1,10 @@
-using NCDatasets,NetCDF,Dates,MeshArrays
+using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 
+"""
+    NCvar
+
+NCvar data structure. Contains all the information needed to write data to a NetCDF file.
+"""
 struct NCvar
     name::String
     units::String
@@ -9,17 +14,34 @@ struct NCvar
     backend::Module
 end
 
-struct Bindata # Pointer to data stored in binary files- contains info needed to read in
+"""
+    BinData
+
+BinData data structure. Contains a string filename or array of string filenames of binary
+    files as well as information needed to read that file.
+"""
+struct BinData # Pointer to data stored in binary files- contains info needed to read in
     fnames::Union{Array{String},String}
     precision::Type
     iosize::Tuple
     fldidx::Int
 end
 
-function Bindata(fnames::Union{Array{String},String},precision::Type,iosize::Tuple)
-    return Bindata(fnames,precision,iosize,1)
+"""
+    BinData(fnames::Union{Array{String},String},precision::Type,iosize::Tuple)
+
+Construct a BinData struct for files that contain one field.
+"""
+function BinData(fnames::Union{Array{String},String},precision::Type,iosize::Tuple)
+    return BinData(fnames,precision,iosize,1)
 end
 
+"""
+    NCData
+
+NCData data structure. Contains a string filename or array of string filenames of NetCDF
+    files as well as information needed to read that file.
+"""
 struct NCData
     fname::AbstractString
     varname::AbstractString
@@ -27,6 +49,13 @@ struct NCData
     precision::Type
 end
 
+"""
+    TileData{T}
+
+TileData data structure. Contains either a gcmfaces struct or BinData struct (`vals`),
+    gcmfaces structs describing the tile layout (`tileinfo`), and other information for
+    reading/writing tile data.
+"""
 struct TileData{T}
     vals::T
     tileinfo::Dict
@@ -35,10 +64,15 @@ struct TileData{T}
     numtiles::Int
 end
 
+"""
+    TileData(vals,tilesize::Tuple)
+
+Construct a TileData struct. First generate the tileinfo, precision, and numtiles attributes.
+"""
 function TileData(vals,tilesize::Tuple)
     ni,nj = tilesize
     tileinfo = findtiles(ni,nj)
-    if isa(vals,Bindata)
+    if isa(vals,BinData)
         prec = vals.precision
     else
         prec = Float32
@@ -46,6 +80,13 @@ function TileData(vals,tilesize::Tuple)
     return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
 end
 
+#=
+    findidx(A,val)
+
+Helper function for getting the indices for tiles. A is a gcmfaces struct, val is a
+    numeric value to get the indices of. Returns a Dict of the indices for each face.
+    Not currently exported. Maybe move to MeshArrays?
+=#
 function findidx(A,val)
     tileidx = Dict()
     for i = 1:A.nFaces
@@ -55,6 +96,12 @@ function findidx(A,val)
     return tileidx
 end
 
+#=
+    gettile(fldvals,tileinfo,tilesize,tilenum::Int)
+
+Helper function for retrieving a tile from a gcmfaces struct as a numeric Array. Not
+    currently exported.
+=#
 function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
     tilidx = findidx(tileinfo["tileNo"],tilenum)
 
@@ -86,37 +133,68 @@ function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
     return tilfld
 end
 
-function gettiles(fldvals,tilenum::Int)
-    tilesize = fldvals.tilesize
+#=
+    gettiles(fldvals,tilenum::Int)
 
-    tilfld = gettile(fldvals.vals,fldvals.tileinfo,tilesize,tilenum)
-    tillat = gettile(fldvals.tileinfo["XC"],fldvals.tileinfo,fldvals.tilesize,tilenum)
-    tillon = gettile(fldvals.tileinfo["YC"],fldvals.tileinfo,fldvals.tilesize,tilenum)
+Helper function for retrieving a tile from a gcmfaces struct as a numeric Array along 
+    with associated latitude and longitude. Not currently exported.
+=#
+function gettiles(tilfld,tilenum::Int)
+    tilesize = tilfld.tilesize
+
+    tilfld = gettile(tilfld.vals,tilfld.tileinfo,tilesize,tilenum)
+    tillat = gettile(tilfld.tileinfo["XC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
+    tillon = gettile(tilfld.tileinfo["YC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
 
     return tilfld,tillat,tillon
 end
 
-# Functions to get single time step
+"""
+    getindex(v::NCvar,i::Integer)
+
+Retrive an NCvar at time step i.
+
+Currently only works when values is a BinData, NCdata, or array of time steps.
+"""
 function getindex(v::NCvar,i::Integer)
     NCvar(v.name,v.units,v.dims,v.values[i],v.atts,v.backend)
 end
 
-function getindex(d::Bindata,i) # Gets file at time index i
+"""
+    getindex(d::BinData,i::Integer)
+
+ Return a new BinData object with the ith file, this being time index i.
+"""
+function getindex(d::BinData,i::Integer) # Gets file at time index i
     if isa(d.fnames,Array)
         newfnames = d.fnames[i]
-    else
+    elseif i == 1
         newfnames = d.fnames
     end
     
-    Bindata(newfnames,d.precision,d.iosize)
+    BinData(newfnames,d.precision,d.iosize)
 end
 
+"""
+    getindex(d::NCData,i)
+
+Retrieve the ith time step from the NetCDF file.
+"""
 function getindex(d::NCData,i) # Gets data at time index i
     readncdata(d,i)
 end
 
-function readbin(fname::String,prec::Type,iosize::Tuple,n3=[],fldidx=1)
-    n1,n2 = iosize
+"""
+    readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
+
+Read in a binary file as an array.
+"""
+function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
+    if length(iosize) == 3
+        n1,n2,n3 = iosize
+    else
+        n1,n2 = iosize
+    end
     
     if prec == Float64
         reclen = 6
@@ -142,6 +220,11 @@ function readbin(fname::String,prec::Type,iosize::Tuple,n3=[],fldidx=1)
     
 end
 
+"""
+    readncdata(var::NCData,i::Union{Colon,Integer}=:)
+
+Read data from a NetCDF file at time step i.
+"""
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
     ndims = length(size(ds[var.varname]))
@@ -161,16 +244,31 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     return values
 end
 
-function addDim(ds::NCDatasets.Dataset,dimvar::NCvar) # NCDatasets
+"""
+    addDim(ds::NCDatasets.Dataset,dimvar::NCvar) # NCDatasets
+
+Add a dimension to an NCDatasets Dataset.
+"""
+function addDim(ds::NCDatasets.Dataset,dimvar::NCvar)
     defDim(ds,dimvar.name,dimvar.dims[1])
 end
 
+"""
+    addDim(dimvar::NCvar)
+
+Add a dimension to a NetCDF file using the NetCDF package.
+"""
 function addDim(dimvar::NCvar) #NetCDF
     NcDim(dimvar.name,collect(dimvar.values),
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts),
     unlimited = dimvar.dims==Inf)
 end
 
+"""
+    addVar(ds::NCDatasets.Dataset,field::NCvar)
+
+Add a variable to a NetCDF file using the NCDatasets package.
+"""
 function addVar(ds::NCDatasets.Dataset,field::NCvar)
     if ~isempty(field.units)
         atts = merge(Dict(("units" =>field.units)),field.atts)
@@ -178,12 +276,19 @@ function addVar(ds::NCDatasets.Dataset,field::NCvar)
         atts = field.atts
     end
     if isa(field.values,Array)
-        fieldvar = defVar(ds,field.name,field.values,tuple([f.name for f in field.dims]...),attrib=atts)
+        fieldvar = defVar(ds,field.name,field.values,
+                            tuple([f.name for f in field.dims]...),attrib=atts)
     else
-        fieldvar = defVar(ds,field.name,field.values.precision,tuple([f.name for f in field.dims]...),attrib=atts)
+        fieldvar = defVar(ds,field.name,field.values.precision,
+                            tuple([f.name for f in field.dims]...),attrib=atts)
     end
 end
 
+"""
+    addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
+
+Add a variable with dimensions dimlist to a NetCDF file using the NetCDF package.
+"""
 function addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
     if ~isempty(field.units)
         atts = merge(Dict(("units" =>field.units)),field.atts)
@@ -191,10 +296,15 @@ function addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
         atts = field.atts
     end
     fieldvar = NcVar(field.name,dimlist,
-    atts = atts, 
-    t = field.values.precision)
+                        atts = atts, 
+                        t = field.values.precision)
 end
 
+"""
+    addVar(field::NCvar})
+
+Add a variable and its dimensions to a NetCDF file using the NetCDF package.
+"""
 function addVar(field::NCvar)
     dimlist = addDim.(field.dims)
     if ~isempty(field.units)
@@ -207,12 +317,17 @@ function addVar(field::NCvar)
     #t = field.values.precision)
 end
 
+"""
+    addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
+
+Add data to predefined variables in a NetCDF file.
+"""
 function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
-    isBinData = isa(var.values,Bindata)
+    isBinData = isa(var.values,BinData)
     isNCData = isa(var.values,NCData)
     isTileData = isa(var.values,TileData)
     if isTileData
-        isBinData = isa(var.values.vals,Bindata)
+        isBinData = isa(var.values.vals,BinData)
     end
     nsteps = 1
     if isBinData || isNCData || isTileData || isa(var.values[1],Array) # Binary files or array of timesteps
@@ -283,19 +398,26 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
     
 end
 
+
+#=
+    writetiles(v,var,tilenum,timeidx=1)
+
+Helper function for writing a tile to a NetCDF file.
+=#
 function writetiles(v,var,tilenum,timeidx=1)
     if isa(v,Array)
         v = v[findfirst(isequal(var.name),name.(v))]
     end
     tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
-    if isa(var.values.vals,Bindata)
+    if isa(var.values.vals,BinData)
         iosize = var.values.vals.iosize
         if isa(var.values.vals.fnames,Array)
             fnames = var.values.vals.fnames
         else
             fnames = [var.values.vals.fnames]
         end
-        v0 = convert2gcmfaces(readbin(fnames[timeidx],var.values.precision,iosize,var.values.vals.fldidx))
+        v0 = convert2gcmfaces(readbin(fnames[timeidx],var.values.precision,iosize,
+                                        var.values.vals.fldidx))
     else
         if isa(var.values.vals,gcmfaces)
             v0 = var.values.vals
@@ -303,24 +425,37 @@ function writetiles(v,var,tilenum,timeidx=1)
             v0 = var.values.vals[timeidx]
         end
     end
-    ndims = length(v0.f[1])
+    numdims = length(size(v0.f[1]))
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
-    if ndims == 1
+    if numdims == 1
         v[:,timeidx] = v0
-    elseif ndims == 2
+    elseif numdims == 2
         v[:,:,timeidx] = v0
-    elseif ndims == 3
+    elseif numdims == 3
         v[:,:,:,timeidx] = v0
     end
 
 end
 
+
+"""
+    addDimData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
+
+Add dimension data to predefined dimensions in a NetCDF file.
+"""
 function addDimData(ds,dimvar::NCvar)
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts)
     defVar(ds,dimvar.name,dimvar.values,(dimvar.name,),attrib=atts)
 end
 
-function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; fillval=NaN, missval=NaN, ff=1, ntile=1)
+"""
+    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
+                fillval=NaN, missval=NaN, ff=1, ntile=1)
+
+Create a new NetCDF file and adds variable and dimension definitions.
+"""
+function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README,
+                    fillval=NaN, missval=NaN, ff=1, ntile=1)
     
     if isa(field,Dict{String,NCvar})
         
@@ -360,7 +495,7 @@ function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; fi
     elseif backend == NetCDF # Not supporting multiple variables right now
         #= for i = 1:length(field)
             f = field[1];
-            if isa(f.values,Bindata) || isa(f.values,NCData)
+            if isa(f.values,BinData) || isa(f.values,NCData)
                 prec = f.values.precision
             else
                 prec = eltype(f.values)
@@ -392,6 +527,14 @@ end
 
 
 
+"""
+    readncfile(fname,backend::Module=NCDatasets)
+
+Read in a NetCDF file and output as an NCvar struct.
+    
+Returns variables and dimensions in the file as NCvar structs, and file attributes as a 
+    Dict. Larger variables/dimensions are not loaded into memory.
+"""
 function readncfile(fname,backend::Module=NCDatasets)
     
     ds = Dataset(fname)
@@ -460,7 +603,11 @@ function readncfile(fname,backend::Module=NCDatasets)
     return vars,dims,fileatts
 end
 
-# Helpers for finding time dimension
+#=
+    istimedim(d::NCvar)
+
+Helper function: determines whether d is a time dimension. Not exported.
+=#
 function istimedim(d::NCvar)
     
     timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
@@ -468,19 +615,40 @@ function istimedim(d::NCvar)
     
 end
 
+#=
+    findtimedim(v::NCvar)
+
+Helper function: finds which dimension is a time dimension, if any. Not exported.
+=#
 function findtimedim(v::NCvar)
     return findall(istimedim.(v.dims))[1]
 end
 
+#=
+    hastimedim(v::NCvar)
+
+Helper function: determines whether a variable has a time dimension. Not exported.
+=#
 function hastimedim(v::NCvar)
     ncvardim = isa.(v.dims,NCvar)
     return any(ncvardim) && any(istimedim.(v.dims[ncvardim]))
 end
 
+#=
+    hastimedimdims::Array{NCvar})
+
+Helper function: determines whether an array of dimensions has a time dimension. Not 
+    exported.
+=#
 function hastimedim(dims::Array{NCvar})
     return any(istimedim.(dims))
 end
 
+"""
+    parsemeta(metafile)
+
+Parse out an MITgcm metadata file and return a Dict of fields in the file.
+"""
 function parsemeta(metafile)
     
     meta = read(metafile,String)
@@ -515,7 +683,11 @@ function parsemeta(metafile)
     
 end
 
-using Printf
+"""
+    readAvailDiagnosticsLog(fname,fldname)
+
+Get the information for a particular field from the available_diagnostics.log file.
+"""
 function readAvailDiagnosticsLog(fname,fldname)
     availdiags = readlines(fname)
     line = availdiags[findall(occursin.(@sprintf("%-8s",fldname),availdiags))[1]]
