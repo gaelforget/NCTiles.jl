@@ -1,5 +1,3 @@
-# This file is machine-generated - editing it directly is not advised
-
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
@@ -42,7 +40,7 @@ deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
 [[Distributed]]
-deps = ["Random", "Serialization", "Sockets"]
+deps = ["LinearAlgebra", "Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[DocStringExtensions]]
@@ -52,10 +50,10 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.7.0"
 
 [[Documenter]]
-deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "Pkg", "REPL", "Random", "Test", "Unicode"]
-git-tree-sha1 = "13a6d15102410d8e70146533b759fc48d844a1d0"
+deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Unicode"]
+git-tree-sha1 = "38509269fc99a9bc450fdb9e17e805021f3e5b1b"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.22.3"
+version = "0.22.4"
 
 [[Formatting]]
 deps = ["Compat"]
@@ -64,7 +62,7 @@ uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.3.5"
 
 [[InteractiveUtils]]
-deps = ["Markdown"]
+deps = ["LinearAlgebra", "Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[JSON]]
@@ -90,32 +88,34 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
-[[Missings]]
-deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
-git-tree-sha1 = "d1d2585677f2bd93a97cfeb8faa7a0de0f982042"
-uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.4.0"
-
 [[MeshArrays]]
-deps = ["Dates", "Printf", "Test"]
-git-tree-sha1 = "818172a54e2d06b930e4a04a22b8737f3fb9450c"
+deps = ["Printf"]
+git-tree-sha1 = "a8d4923a536b452d92076e61cf8d924c2b2ae3c2"
+repo-rev = "master"
+repo-url = "/Users/Lauren/Documents/eaps/tools/MeshArrays.jl"
 uuid = "cb8c808f-1acf-59a3-9d2b-6e38d009f683"
-version = "0.1.5"
+version = "0.1.6"
+
+[[Missings]]
+deps = ["SparseArrays", "Test"]
+git-tree-sha1 = "f0719736664b4358aa9ec173077d4285775f8007"
+uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
+version = "0.4.1"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NCDatasets]]
-deps = ["BinDeps", "Compat", "CondaBinDeps", "DataStructures", "Dates", "Libdl", "Missings", "Printf", "Random", "Test"]
-git-tree-sha1 = "9d0716b704c5cd142fe2c1879ffa083d292a0a42"
+deps = ["BinDeps", "Compat", "CondaBinDeps", "DataStructures", "Dates", "Libdl", "Missings", "Printf", "Random"]
+git-tree-sha1 = "7c92182f5d9094d8b46cf27648342954a630f8ec"
 uuid = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
-version = "0.9.0"
+version = "0.9.2"
 
 [[NetCDF]]
-deps = ["BinDeps", "CondaBinDeps", "Formatting", "Libdl", "Random", "Test"]
-git-tree-sha1 = "6497cb9cb80aa5b3bb6d05b21abc924cb0ca554c"
+deps = ["BinDeps", "CondaBinDeps", "Formatting", "Libdl"]
+git-tree-sha1 = "fce0c7962fb14b8cf2f33ea77885f3b7c7e1485e"
 uuid = "30363a11-5582-574a-97bb-aa9a979735b9"
-version = "0.7.3"
+version = "0.8.0"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
@@ -171,7 +171,7 @@ uuid = "30578b45-9adc-5946-b283-645ec420af67"
 version = "0.4.0"
 
 [[UUIDs]]
-deps = ["Random", "SHA"]
+deps = ["Random"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [[Unicode]]
