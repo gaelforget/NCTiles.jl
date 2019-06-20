@@ -191,6 +191,7 @@ end
 Read in a binary file as an array. (resembles `read_bin` in MeshArrays)
 """
 function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
+    n3 = []
     if length(iosize) == 3
         n1,n2,n3 = iosize
     else
@@ -458,10 +459,10 @@ end
 Create netcdf file and add variable and dimension definitions.
 Uses either backend (`NCDatasets.jl` or `NetCDF.jl`).
 """
-function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README,
+function createfile(filename, field::Union{NCvar,Dict}, README;
                     fillval=NaN, missval=NaN, ff=1, ntile=1)
     
-    if isa(field,Dict{String,NCvar})
+    if isa(field,Dict)
         
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
         dims = filter( d -> isa(d,NCvar),dims)
