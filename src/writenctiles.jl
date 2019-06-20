@@ -3,7 +3,8 @@ using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 """
     NCvar
 
-NCvar data structure. Contains all the information needed to write data to a NetCDF file.
+Data structure containing information needed to write a NetCDF file. This
+includes a list of filenames (see `Bindata`) if the data is not loaded into memory.
 """
 struct NCvar
     name::String
@@ -187,7 +188,7 @@ end
 """
     readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
 
-Read in a binary file as an array.
+Read in a binary file as an array. (resembles `read_bin` in MeshArrays)
 """
 function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
     if length(iosize) == 3
@@ -223,7 +224,8 @@ end
 """
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
-Read data from a NetCDF file at time step i.
+Read netcdf file as specified in `NCData` argument. Optional
+argument `i` can be used to read a specific records / times.
 """
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
@@ -313,14 +315,15 @@ function addVar(field::NCvar)
         attributes = field.atts
     end
     fieldvar = NcVar(field.name,dimlist,
-    atts = attributes)#, 
-    #t = field.values.precision)
+        atts = merge(Dict(("units" =>field.units)),field.atts))#,
+        #t = field.values.precision)
 end
 
 """
-    addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
+    addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
-Add data to predefined variables in a NetCDF file.
+Fill variable with data in netcdf file. Work with both backends 
+(`NCDatasets.jl` or `NetCDF.jl`).
 """
 function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
     isBinData = isa(var.values,BinData)
@@ -358,7 +361,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
             ndims = length(size(var.values[1]))
             nsteps = length(var.values)
         end
-        
+
         for i = 1:nsteps
             if isTileData
                 writetiles.(v,Ref(var),1:var.values.numtiles,Ref(i))
@@ -452,7 +455,8 @@ end
     createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
                 fillval=NaN, missval=NaN, ff=1, ntile=1)
 
-Create a new NetCDF file and adds variable and dimension definitions.
+Create netcdf file and add variable and dimension definitions.
+Uses either backend (`NCDatasets.jl` or `NetCDF.jl`).
 """
 function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README,
                     fillval=NaN, missval=NaN, ff=1, ntile=1)
@@ -473,7 +477,7 @@ function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README,
             field = [field]
         end
     end
-    
+
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
     "Conventions" => "CF-1.6",
     "description" => join(fieldnames,",")*" -- "*README[1]],
@@ -525,15 +529,14 @@ function createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README,
     
 end
 
-
-
 """
     readncfile(fname,backend::Module=NCDatasets)
 
 Read in a NetCDF file and output as an NCvar struct.
     
 Returns variables and dimensions in the file as NCvar structs, and file attributes as a 
-    Dict. Larger variables/dimensions are not loaded into memory.
+    Dict. Larger variables/dimensions are not loaded into memory. Use either backend 
+    (`NCDatasets.jl` or `NetCDF.jl`)
 """
 function readncfile(fname,backend::Module=NCDatasets)
     
