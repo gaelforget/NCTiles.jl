@@ -27,4 +27,5 @@ To be continued...
 ```@autodocs
 Modules = [NCTiles]
 Order   = [:function, :type]
+Private = false
 ```
