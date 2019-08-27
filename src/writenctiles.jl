@@ -37,6 +37,10 @@ function BinData(fnames::Union{Array{String},String},precision::Type,iosize::Tup
     return BinData(fnames,precision,iosize,1)
 end
 
+function BinData(fnames::Union{Array{String},String},precision::Type,iosize::Tuple,meta::Dict,fldname::String)
+    return BinData(fnames,precision,iosize,findfirst(meta["fldList"] .== fldname)[2])
+end
+
 """
     NCData
 
@@ -49,6 +53,36 @@ struct NCData
     backend::Module
     precision::Type
 end
+
+
+function getnsteps(d)
+    if isa(d,BinData)
+        if isa(d.fnames,Array)
+            nsteps = length(d.fnames)
+        else
+            nsteps = 1
+        end
+    elseif isa(d,NCData)
+        ds = Dataset(d.fname)
+        tdim = dimnames(ds[d.varname])[end]
+        timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
+        if any(occursin.(timeUnits,Ref(lowercase(ds[tdim].attrib["units"]))))
+            nsteps = length(ds[tdim])
+        else
+            nsteps = 1
+        end
+    elseif isa(d,TileData)
+        nsteps = getnsteps(d.vals)
+    elseif isa(d,Array) && isa(d[1],Array)
+        nsteps = length(d)
+    else
+        nsteps = 1
+    end
+
+    return nsteps
+end
+
+
 
 """
     TileData{T}
@@ -191,7 +225,7 @@ end
 Read in a binary file as an array. (resembles `read_bin` in MeshArrays)
 """
 function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
-    n3 = []
+    n3 = 1
     if length(iosize) == 3
         n1,n2,n3 = iosize
     else
@@ -199,14 +233,14 @@ function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
     end
     
     if prec == Float64
-        reclen = 6
+        reclen = 8
     else
-        reclen=4
+        reclen = 4
     end
     
-    if isempty(n3)
-        n3=Int64(stat(fname).size/n1/n2/reclen)
-    end
+    #if isempty(n3)
+    #    n3=Int64(stat(fname).size/n1/n2/reclen)
+    #end
 
     field = Array{prec,1}(undef,(n1*n2*n3))
     fid = open(fname)
@@ -222,6 +256,12 @@ function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
     
 end
 
+"""
+    readbin(flddata::BinData,tidx=1)
+
+Read in a binary file as an array. (resembles `read_bin` in MeshArrays)
+"""
+readbin(flddata::BinData,tidx=1) = readbin(flddata.fnames[tidx],flddata.precision,flddata.iosize,flddata.fldidx)
 """
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
@@ -246,6 +286,16 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     close(ds)
     return values
 end
+
+function readdata(flddata,tidx=1)
+    if isa(flddata,BinData)
+        res = readbin(flddata,tidx)#readbin(flddata.fnames[tidx],flddata.precision,flddata.iosize,flddata.fldidx)
+    elseif isa(flddata,NCData)
+        res = readncdata(flddata,tidx)
+    end
+    return res
+end
+
 
 """
     addDim(ds::NCDatasets.Dataset,dimvar::NCvar) # NCDatasets
@@ -279,7 +329,12 @@ function addVar(ds::NCDatasets.Dataset,field::NCvar)
         atts = field.atts
     end
     if isa(field.values,Array)
-        fieldvar = defVar(ds,field.name,field.values,
+        if isa(field.values[1],Array)
+            prec = typeof(field.values[1][1])
+        else
+            prec = typeof(field.values[1])
+        end
+        fieldvar = defVar(ds,field.name,prec,
                             tuple([f.name for f in field.dims]...),attrib=atts)
     else
         fieldvar = defVar(ds,field.name,field.values.precision,
@@ -326,51 +381,34 @@ end
 Fill variable with data in netcdf file. Work with both backends 
 (`NCDatasets.jl` or `NetCDF.jl`).
 """
-function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
+function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar,startidx=1)
     isBinData = isa(var.values,BinData)
     isNCData = isa(var.values,NCData)
     isTileData = isa(var.values,TileData)
     if isTileData
         isBinData = isa(var.values.vals,BinData)
     end
-    nsteps = 1
+    nsteps = getnsteps(var.values)
+    ndims = length(var.dims)
+    if hastimedim(var)
+        ndims = ndims-1
+    end
     if isBinData || isNCData || isTileData || isa(var.values[1],Array) # Binary files or array of timesteps
         
-        if isBinData
-            if isTileData && isa(var.values.vals.fnames,Array)
-                nsteps = length(var.values.vals.fnames)
+        if isBinData && ~ isTileData
+            if isa(var.values.fnames,Array)
+                fnames = var.values.fnames
             else
-                ndims = length(var.values.iosize)
-                if isa(var.values.fnames,Array)
-                    nsteps = length(var.values.fnames)
-                    fnames = var.values.fnames
-                else
-                    fnames = [var.values.fnames]
-                end
+                fnames = [var.values.fnames]
             end
-        elseif isNCData
-            ndims = length(var.dims)
-            if hastimedim(var)
-                ndims = ndims-1
-                timedimidx = findtimedim(var)
-                nsteps = var.dims[timedimidx].dims[1]
-            end
-            
-        elseif isTileData && isa(var.values.vals,Array) && isa(var.values.vals[1],gcmfaces)
-            nsteps = length(var.values.vals)
-        elseif isa(var.values,Array) && isa(var.values[1],Array)
-            ndims = length(size(var.values[1]))
-            nsteps = length(var.values)
         end
 
-        for i = 1:nsteps
+        for i = startidx:nsteps
             if isTileData
                 writetiles.(v,Ref(var),1:var.values.numtiles,Ref(i))
             else
-                if isBinData
-                    v0 = readbin(fnames[i],var.values.precision,var.values.iosize)
-                elseif isNCData
-                    v0 = readncdata(var.values,i)
+                if isBinData || isNCData
+                    v0 = readdata(var.values,i)
                 else
                     v0 = var.values[i]
                 end
@@ -479,9 +517,15 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
         end
     end
 
+    if isa(fieldnames,Array)
+        fieldnamestring = join(fieldnames,",")
+    else
+        fieldnamestring = fieldnames
+    end
+
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
     "Conventions" => "CF-1.6",
-    "description" => join(fieldnames,",")*" -- "*README[1]],
+    "description" => fieldnamestring*" -- "*README[1]],
     [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
     [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
     "_FillValue" => fillval,
