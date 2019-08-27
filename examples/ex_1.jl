@@ -21,8 +21,8 @@ README = readlines(examplesdir*"README")
 
 # Set up data for writing to NCfiles
 # Define dimensions
-dims = [NCvar("lon_c","degrees east",size(lon),lon,Dict("long_name" => "longitude"),NCDatasets),
-        NCvar("lat_c","degrees north",size(lat),lat,Dict("long_name" => "latitude"),NCDatasets),
+dims = [NCvar("lon_c","degrees_east",size(lon),lon,Dict("long_name" => "longitude"),NCDatasets),
+        NCvar("lat_c","degrees_north",size(lat),lat,Dict("long_name" => "latitude"),NCDatasets),
         NCvar("time","days since 1992-01-01",Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
         ]
 

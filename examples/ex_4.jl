@@ -21,7 +21,7 @@ dims = [
     NCvar("i_c","1",tilesize[1],1:tilesize[1],Dict("long_name" => "Cartesian coordinate 1"),NCDatasets),
     NCvar("j_c","1",tilesize[2],1:tilesize[2],Dict("long_name" => "Cartesian coordinate 2"),NCDatasets),
     NCvar("dep_c","m",size(dep),dep,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NCDatasets),
-    NCvar("time",timeunits,Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
+    NCvar("tim",timeunits,Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
 ]
 
 fldidx = 1:106
@@ -36,8 +36,8 @@ for fidx in fldidx
         tillat = TileData(tilfld.tileinfo["YC"],tilfld.tileinfo,tilfld.tilesize,tilfld.precision,tilfld.numtiles)
         tillon = TileData(tilfld.tileinfo["XC"],tilfld.tileinfo,tilfld.tilesize,tilfld.precision,tilfld.numtiles)
         flds = Dict([fldname => NCvar(fldname,diaginfo["units"],dims,tilfld,Dict(),NCDatasets),
-                    "lon_c" => NCvar("lon_c","degrees east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets),
-                    "lat_c" => NCvar("lat_c","degrees north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets)
+                    "lon" => NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets),
+                    "lat" => NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets)
         ]) 
         #myfld = NCvar(fldname,diaginfo["units"],dims,TileData(flds[1],tilesize),Dict(),NCDatasets)
         savepath = saveloc*fldname
@@ -46,7 +46,7 @@ for fidx in fldidx
         end
 
         numtiles = flds[fldname].values.numtiles
-        savenames = savepath*"/"*fldname*".".*lpad.(string.(1:numtiles),ndigits(numtiles),"0").*".nc"
+        savenames = savepath*"/"*fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
 
         #savenames = savepath*"/ex2_Tiles_".*string.(1:flds[fldname].values.numtiles).*".nc"
 
@@ -57,8 +57,8 @@ for fidx in fldidx
         #dims = [x[3] for x in datasets]
 
         addData(fldvars,flds[fldname])
-        addData(fldvars,flds["lat_c"])
-        addData(fldvars,flds["lon_c"])
+        addData(fldvars,flds["lat"])
+        addData(fldvars,flds["lon"])
 
         for dim in dims
             addDimData.(ds,Ref(dim))
