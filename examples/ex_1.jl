@@ -1,9 +1,12 @@
 using NCTiles,NCDatasets,NetCDF
 
 # Point to interpolated 2D Data
-examplesdir = "examples/"
+examplesdir = joinpath("data","ex1")
 selectfields = ["Chl050"]
-fnames = examplesdir*'/'.*filter(x -> occursin(".data",x), readdir(examplesdir))
+indir = joinpath(examplesdir,"diags_interp",selectfields[1])
+savedir = joinpath(examplesdir,"interp_ncfiles")
+if ~ispath(savedir); mkpath(savedir); end
+fnames = joinpath.(Ref(indir),filter(x -> occursin(".data",x), readdir(indir)))
 
 # Hard coding these for now
 prec = Float32
@@ -15,7 +18,7 @@ time_steps = timeinterval/2:timeinterval:timeinterval*nsteps
 longname = "Average chlorophyll concentration (top 50m)"
 units = "mg Chl"
 
-README = readlines(examplesdir*"README")
+README = readlines(joinpath(examplesdir,"README"))
 
 # Using NCDatasets
 
@@ -23,7 +26,7 @@ README = readlines(examplesdir*"README")
 # Define dimensions
 dims = [NCvar("lon_c","degrees_east",size(lon),lon,Dict("long_name" => "longitude"),NCDatasets),
         NCvar("lat_c","degrees_north",size(lat),lat,Dict("long_name" => "latitude"),NCDatasets),
-        NCvar("time","days since 1992-01-01",Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
+        NCvar("tim","days since 1992-01-01",Inf,time_steps,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
         ]
 
 # Define field- BinData contains the filenames where the data sits so it's only loaded when needed
@@ -31,7 +34,7 @@ fielddata = BinData(fnames,prec,(n1,n2))
 field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname),NCDatasets)
 
 # Create the NetCDF file and populate with dimension and field info
-ds,fldvar,dimlist = createfile(examplesdir*"ex1_NCDatasets.nc",field,README)
+ds,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NCDatasets.nc"),field,README)
 
 # Add field and dimension data
 addData(fldvar,field)
@@ -46,7 +49,7 @@ close(ds)
 # Define dimensions
 dims = [NCvar("lon_c","degrees east",size(lon),lon,Dict("long_name" => "longitude"),NetCDF),
         NCvar("lat_c","degrees north",size(lat),lat,Dict("long_name" => "latitude"),NetCDF),
-        NCvar("time","days from 1992-01-01",Inf,collect(time_steps),Dict(("long_name" => "time","standard_name" => "time")),NetCDF)
+        NCvar("tim","days from 1992-01-01",Inf,collect(time_steps),Dict(("long_name" => "time","standard_name" => "time")),NetCDF)
         ]
 
 # Define field- BinData contains the filenames where the data sits so it's only loaded when needed
@@ -56,7 +59,7 @@ field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname)
 using NetCDF
 
 # Create the NetCDF file and populate with dimension and field info, as well as dimension data
-ncfile,fldvar,dimlist = createfile(examplesdir*"ex1_NetCDF.nc",field,README)
+ncfile,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NetCDF.nc"),field,README)
 
 # Add field data
 addData(fldvar,field)
