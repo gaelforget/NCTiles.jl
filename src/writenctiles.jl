@@ -519,13 +519,13 @@ end
 
 """
     createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
-                fillval=NaN, missval=NaN, ff=1, ntile=1)
+                fillval=NaN, missval=NaN, itile=1, ntile=1)
 
 Create netcdf file and add variable and dimension definitions.
 Uses either backend (`NCDatasets.jl` or `NetCDF.jl`).
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
-                    fillval=NaN, missval=NaN, ff=1, ntile=1)
+                    fillval=NaN, missval=NaN, itile=1, ntile=1)
     
     if isa(field,Dict)
         
@@ -557,7 +557,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
     "_FillValue" => fillval,
     "missing_value" => missval,
-    "itile" => ff,
+    "itile" => itile,
     "ntile" => ntile])
     
     if backend == NCDatasets

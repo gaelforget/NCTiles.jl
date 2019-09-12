@@ -2,3 +2,6 @@
 devel
 docs/build/
 examples/data/
+examples/grids/
+test/GRID_CS32
+test/CS32.tar.gz

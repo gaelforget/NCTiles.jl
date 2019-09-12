@@ -63,7 +63,7 @@ for fidx in fldidx
         savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
         rm.(savenames, force=true)
 
-        datasets = [createfile(fname,flds,README) for fname in savenames]
+        datasets = [createfile(savenames[tidx],flds,README, itile = tidx, ntile = length(savenames)) for tidx in 1:length(savenames)]
 
         ds = [x[1] for x in datasets]
         fldvars = [x[2] for x in datasets]
