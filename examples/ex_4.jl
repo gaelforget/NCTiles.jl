@@ -1,5 +1,5 @@
 using MeshArrays, NCDatasets, NCTiles
-grid = GCMGridSpec("LLC90","grids/")
+grid = GridSpec("LLC90","grids/")
 
 exampledir = joinpath("data","ex4")
 datadir = joinpath(exampledir,"model_output")
@@ -24,7 +24,7 @@ dims = [
     NCvar("tim",timeunits,Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
 ]
 
-gridvars = GCMGridLoad(grid)
+gridvars = GridLoad(grid)
 
 land = gridvars["hFacC"]
 for f in land.fIndex
@@ -41,7 +41,6 @@ thic = gridvars["DRC"]
 fldidx = 1:106
 for fidx in fldidx
     @time begin
-        global dims
         fldname = metafile["fldList"][fidx]
         println("Processing "*fldname)
         diaginfo = readAvailDiagnosticsLog(joinpath(exampledir,"available_diagnostics.log"),fldname)

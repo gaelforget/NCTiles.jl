@@ -476,16 +476,23 @@ function writetiles(v,var,tilenum,timeidx=1)
     if isa(v,Array)
         v = v[findfirst(isequal(var.name),name.(v))]
     end
-    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
+    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize; grid = tileinfo["XC"].grid
     if isa(var.values.vals,BinData)
         iosize = var.values.vals.iosize
+        prec = var.values.precision
         if isa(var.values.vals.fnames,Array)
             fnames = var.values.vals.fnames
         else
             fnames = [var.values.vals.fnames]
         end
-        v0 = MeshArrays.convert2gcmfaces(readbin(fnames[timeidx],var.values.precision,iosize,
-                                        var.values.vals.fldidx),tileinfo["iTile"].grid)
+        if length(iosize) == 3
+            f = Array{Array{prec,2},2}(undef,grid.nFaces,iosize[3])
+            exarray = MeshArray(grid,f)
+        else
+            exarray = tileinfo["XC"]
+        end
+        v0 = read(readbin(fnames[timeidx],prec,iosize,
+                                        var.values.vals.fldidx),exarray)
     else
         if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
             v0 = var.values.vals

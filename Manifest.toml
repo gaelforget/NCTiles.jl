@@ -9,6 +9,12 @@ git-tree-sha1 = "12093ca6cdd0ee547c39b1870e0c9c3f154d9ca9"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
 version = "0.8.10"
 
+[[CatViews]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "23d1f1e10d4e24374112fcf800ac981d14a54b24"
+uuid = "81a5f4ea-a946-549a-aa7e-2a7f63a27d31"
+version = "1.0.0"
+
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
 git-tree-sha1 = "84aa74986c5b9b898b0d1acaf3258741ee64754f"
@@ -91,18 +97,17 @@ deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MeshArrays]]
-deps = ["Printf"]
-git-tree-sha1 = "e842d9344470a7c72ab353f1a39055286fcc312a"
+deps = ["CatViews", "Printf"]
+git-tree-sha1 = "22287e08bc256d6d6648e07e2db7b50a6a2a6d31"
 repo-rev = "master"
 repo-url = "/Users/Lauren/Documents/eaps/tools/MeshArrays.jl"
 uuid = "cb8c808f-1acf-59a3-9d2b-6e38d009f683"
-version = "0.2.0"
+version = "0.2.1"
 
 [[Missings]]
-deps = ["SparseArrays", "Test"]
-git-tree-sha1 = "f0719736664b4358aa9ec173077d4285775f8007"
+git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.4.1"
+version = "0.4.2"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"

@@ -216,7 +216,7 @@ function maketestdata()
     end
 
     tilesize = (16,16)
-    grid = GCMGridSpec("CS32",getgrid()*"/")
+    grid = GridSpec("CS32",getgrid()*"/")
     for f in fnamestile2d
         cp(joinpath(grid.path,"Depth.data"),f,force=true)
     end

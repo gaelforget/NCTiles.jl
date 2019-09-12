@@ -69,7 +69,7 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
         tilesize = testvars["tile_ex"]["tilesize"]
         dims = testvars["tile_ex"]["dims"]
         grid = testvars["tile_ex"]["grid"]
-        gridvars = GCMGridLoad(grid)
+        gridvars = GridLoad(grid)
         land = gridvars["hFacC"]
         for f in land.fIndex
             for d in 1:size(land,2)
