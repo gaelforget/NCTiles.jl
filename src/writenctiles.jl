@@ -15,6 +15,10 @@ struct NCvar
     backend::Module
 end
 
+function NCvar(name::String, units::String, dims::NCvar, values, atts::Union{Dict,Nothing}, backend::Module)
+    return NCvar(name, units, [dims], values, atts, backend)
+end
+
 """
     BinData
 
@@ -104,9 +108,9 @@ end
 
 Construct a TileData struct. First generate the tileinfo, precision, and numtiles attributes.
 """
-function TileData(vals,tilesize::Tuple)
+function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     ni,nj = tilesize
-    tileinfo = findtiles(ni,nj)
+    tileinfo = findtiles(ni,nj,grid)
     if isa(vals,BinData)
         prec = vals.precision
     else
@@ -114,6 +118,8 @@ function TileData(vals,tilesize::Tuple)
     end
     return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
 end
+TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GCMGridSpec(grid))
+
 
 """
     findidx(A,val)
@@ -124,7 +130,12 @@ Helper function for getting the indices for tiles. A is a gcmfaces struct, val i
 """
 function findidx(A,val)
     tileidx = Dict()
-    for i = 1:A.nFaces
+    if isa(A,MeshArrays.gcmfaces)
+        nfaces = A.nFaces
+    elseif isa(A,MeshArray)
+        nfaces = A.grid.nFaces
+    end
+    for i = 1:nfaces
         idx = findall(x->x==val,A.f[i])
         tileidx[i] = [x for x in idx]
     end
@@ -140,19 +151,34 @@ Helper function for retrieving a tile from a gcmfaces struct as a numeric Array.
 function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
     tilidx = findidx(tileinfo["tileNo"],tilenum)
 
-    is3D = length(size(fldvals)) == 3 
+    if isa(fldvals,MeshArrays.gcmfaces)
+        is3D = length(size(fldvals)) == 3 
+        if is3D; n3 = size(fldvals)[3]; end
+    else
+        is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
+        if is3D; n3 = size(fldvals)[2]; end
+    end
 
     if is3D # has depth
-        tilfld = Array{Any,3}(nothing,0,tilesize[2],size(fldvals)[3])
+        tilfld = Array{Any,3}(nothing,0,tilesize[2],n3)
     else
         tilfld = Array{Any,2}(nothing,0,tilesize[2])
     end
-    for iF = 1:fldvals.nFaces
+    if isa(fldvals,MeshArrays.gcmfaces)
+        nfaces = fldvals.nFaces
+    elseif isa(fldvals,MeshArray)
+        nfaces = fldvals.grid.nFaces
+    end
+    for iF = 1:nfaces
         if ~isempty(tilidx[iF])
             imin = minimum(tilidx[iF])[1]; imax = maximum(tilidx[iF])[1]
             jmin = minimum(tilidx[iF])[2]; jmax = maximum(tilidx[iF])[2]
             if is3D
-                tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax,:]]
+                if isa(fldvals,MeshArray)
+                    tilfld = [tilfld; cat([fldvals.f[iF,d][imin:imax,jmin:jmax] for d in 1:n3]...,dims=3)]
+                else
+                    tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax,:]]
+                end
             else
                 tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax]]
             end
@@ -202,7 +228,7 @@ end
 """
 function getindex(d::BinData,i::Integer) # Gets file at time index i
     if isa(d.fnames,Array)
-        newfnames = d.fnames[i]
+        newfnames = [d.fnames[i]]
     elseif i == 1
         newfnames = d.fnames
     end
@@ -450,25 +476,33 @@ function writetiles(v,var,tilenum,timeidx=1)
     if isa(v,Array)
         v = v[findfirst(isequal(var.name),name.(v))]
     end
-    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
+    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize; grid = tileinfo["XC"].grid
     if isa(var.values.vals,BinData)
         iosize = var.values.vals.iosize
+        prec = var.values.precision
         if isa(var.values.vals.fnames,Array)
             fnames = var.values.vals.fnames
         else
             fnames = [var.values.vals.fnames]
         end
-        v0 = convert2gcmfaces(readbin(fnames[timeidx],var.values.precision,iosize,
-                                        var.values.vals.fldidx))
+        if length(iosize) == 3
+            f = Array{Array{prec,2},2}(undef,grid.nFaces,iosize[3])
+            exarray = MeshArray(grid,f)
+        else
+            exarray = tileinfo["XC"]
+        end
+        v0 = read(readbin(fnames[timeidx],prec,iosize,
+                                        var.values.vals.fldidx),exarray)
     else
-        if isa(var.values.vals,gcmfaces)
+        if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
             v0 = var.values.vals
         else
             v0 = var.values.vals[timeidx]
         end
     end
-    numdims = length(size(v0.f[1]))
+
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
+    numdims = length(size(v0))
     if numdims == 1
         v[:,timeidx] = v0
     elseif numdims == 2
@@ -492,13 +526,13 @@ end
 
 """
     createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
-                fillval=NaN, missval=NaN, ff=1, ntile=1)
+                fillval=NaN, missval=NaN, itile=1, ntile=1)
 
 Create netcdf file and add variable and dimension definitions.
 Uses either backend (`NCDatasets.jl` or `NetCDF.jl`).
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
-                    fillval=NaN, missval=NaN, ff=1, ntile=1)
+                    fillval=NaN, missval=NaN, itile=1, ntile=1)
     
     if isa(field,Dict)
         
@@ -530,7 +564,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
     "_FillValue" => fillval,
     "missing_value" => missval,
-    "itile" => ff,
+    "itile" => itile,
     "ntile" => ntile])
     
     if backend == NCDatasets

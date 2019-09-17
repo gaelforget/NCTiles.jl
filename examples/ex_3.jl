@@ -1,12 +1,16 @@
 using NCTiles,NCDatasets,NetCDF,Dates,Printf
 
+examplesdir = joinpath("data","ex3")
+indir = joinpath(examplesdir,"data","cs510","diags_interp")
+availdiagsfname = joinpath(examplesdir,"data","available_diagnostics.log")
+savedir = joinpath(examplesdir,"data","cs510","interp_nctiles")
 
-interpdir = "data/cs510/diags_interp/"
-availdiagsfname = "data/available_diagnostics.log"
-ncdir = "data/cs510/interp_nctiles/"
-fnameprefix = "/darwin_v0.2_cs510"
+if ~ispath(savedir); mkpath(savedir); end
+README = readlines(joinpath(examplesdir,"README"))
+
+exdir = "../../../run/run_cs510/"
+fnameprefix = "darwin_v0.2_cs510"
 groups = ["Nutrients","Bulk_Ecosystem_Characteristcs","Phytoplankton_Functional_Types","Ocean_Color"]
-README = readlines("data/cs510/README")
 
 rename = Dict(["TRAC05" => "PO4",
 "TRAC06" => "SiO2",
@@ -19,9 +23,6 @@ unitsrename = Dict(["mmol C/" => "mmol N/m^3",
                     "mmol Si" => "mmol Si/m^3",
                     "mmol Fe" => "mmol Fe/m^3"])
 
-if !isdir(ncdir)
-    mkpath(ncdir)
-end
 
 # Hard coding dims for now
 lon=-179.75:0.5:179.75; lat=-89.75:0.5:89.75;
@@ -91,25 +92,24 @@ end
 
 for group in groups
     println(group)
+    groupindir = joinpath(indir,group)
+    groupsavedir = joinpath(savedir,group)
+    if !isdir(groupsavedir); mkpath(groupsavedir); end
 
-    if !isdir(ncdir*group)
-        mkpath(ncdir*group)
-    end
-
-    selectfields = filter(x -> isdir(interpdir*group*"/"*x),readdir(interpdir*group))
+    selectfields = filter(x -> isdir(joinpath(groupindir,x)),readdir(groupindir))
 
     flds = Dict{AbstractString,NCvar}()
 
     timestepidx = []
 
     for fldname in selectfields
-        fullpath = interpdir*group*'/'*fldname*'/'
+        fullpath = joinpath(groupindir,fldname)
         fnames_timerange = fldname*'.'.*timeinfname.*".data"
         fnames_avail = filter(x -> occursin(".data",x), readdir(fullpath))
-        fnames = fullpath*'/'.*intersect(fnames_timerange,fnames_avail)
+        fnames = joinpath.(Ref(fullpath),intersect(fnames_timerange,fnames_avail))
         timestepidx = [findfirst(occursin.(f,fnames_timerange)) for f in fnames_avail]
         timestepidx = timestepidx[.!isa.(timestepidx,Nothing)]
-        metafile = fullpath*'/'*fldname*'.'.*timeinfname.*".meta"
+        metafile = joinpath.(Ref(fullpath),fldname*'.'.*timeinfname.*".meta")
         #filter(x -> occursin(".meta",x), readdir(fullpath))[1]
         metafile = parsemeta(metafile[1])
         diaginfo = readAvailDiagnosticsLog(availdiagsfname,fldname)
@@ -141,11 +141,12 @@ for group in groups
 
     end
 
-    println(timestepidx)
 
     # Set up NCvars
-    filename = join((ncdir*fnameprefix,lowercase(group)),"_")*".nc"
-    
+    filename = joinpath(savedir,join([fnameprefix,lowercase(group)],"_")*".nc")
+    println(filename)
+    if isfile(filename); rm(filename); end
+
     # Create the NetCDF file and populate with dimension and field info
     ds,fieldvars,dimlist = createfile(filename,flds,README)
 
@@ -157,13 +158,14 @@ for group in groups
     addDimData.(Ref(ds),dims)
     close(ds)
 
-    createTimestep.(timesteps[timestepidx],timestepidx,Ref(group),Ref(flds),Ref(timestart),Ref(ncdir*group*"/"*fnameprefix),Ref(README),Ref(dimdict))
+    createTimestep.(timesteps[timestepidx],timestepidx,Ref(group),Ref(flds),Ref(timestart),Ref(joinpath(groupsavedir,fnameprefix)),Ref(README),Ref(dimdict))
     #createTimestep.(dtsteps,didx,Ref(group),Ref(flds),Ref(timestart),Ref(ncdir*group*"/"*fnameprefix),Ref(README))
-    # Create NetCDF file for each time step
-    #for i in 1:length(timesteps)
-        
 
-    #end
 end
+
+
+
+
+
 
 
