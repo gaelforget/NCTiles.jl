@@ -3,6 +3,9 @@ uuid = "4c1fdd90-559f-11e9-1abf-07ceafc4ffc0"
 authors = ["gaelforget <gforget@mit.edu>"]
 version = "0.1.0"
 
+[compat]
+julia = "≥ 0.7.0"
+
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

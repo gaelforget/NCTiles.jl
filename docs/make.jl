@@ -3,7 +3,7 @@ using NCTiles
 
 makedocs(
     sitename = "NCTiles",
-    format = :html,
+    format = Documenter.HTML(),
     modules = [NCTiles]
 )
 
