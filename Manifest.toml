@@ -9,6 +9,12 @@ git-tree-sha1 = "12093ca6cdd0ee547c39b1870e0c9c3f154d9ca9"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
 version = "0.8.10"
 
+[[CFTime]]
+deps = ["Dates", "Printf"]
+git-tree-sha1 = "90eddf050a4d4b35520f87b9ba82302643706a1e"
+uuid = "179af706-886a-5703-950a-314cd64e0468"
+version = "0.0.3"
+
 [[CatViews]]
 deps = ["Random", "Test"]
 git-tree-sha1 = "23d1f1e10d4e24374112fcf800ac981d14a54b24"
@@ -86,9 +92,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MeshArrays]]
 deps = ["CatViews", "Printf"]
-git-tree-sha1 = "edd8ca5265b36310367f34e7c9e7788d5e2a6443"
+git-tree-sha1 = "0f6c1d677f26219ca79ddd3a9e0f1603cff72f21"
 uuid = "cb8c808f-1acf-59a3-9d2b-6e38d009f683"
-version = "0.2.1"
+version = "0.2.2"
 
 [[Missings]]
 git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
@@ -99,10 +105,10 @@ version = "0.4.2"
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NCDatasets]]
-deps = ["BinDeps", "Compat", "CondaBinDeps", "DataStructures", "Dates", "Libdl", "Missings", "Printf", "Random"]
-git-tree-sha1 = "7c92182f5d9094d8b46cf27648342954a630f8ec"
+deps = ["BinDeps", "CFTime", "Compat", "CondaBinDeps", "DataStructures", "Dates", "Libdl", "Missings", "Printf", "Random"]
+git-tree-sha1 = "21f833cf06f4e0128726b25aa2fc662b7d66d1bd"
 uuid = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
-version = "0.9.2"
+version = "0.9.3"
 
 [[NetCDF]]
 deps = ["BinDeps", "CondaBinDeps", "Formatting", "Libdl"]

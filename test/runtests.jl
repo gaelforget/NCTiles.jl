@@ -65,7 +65,6 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
         @test testfile(ncfilnc3d,ncfld3d)
     end
 
-    if false
     @testset "Tile Data" begin
         tilesize = testvars["tile_ex"]["tilesize"]
         dims = testvars["tile_ex"]["dims"]
@@ -96,7 +95,6 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
         savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:tilfld2d.numtiles),4,"0").*".nc")
 
         @test all([testfile(fname,flds[fld]) for fname in savenames for fld in keys(flds)])
-    end
     end
 
 end
