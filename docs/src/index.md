@@ -1,6 +1,6 @@
 # NCTiles.jl Documentation
 
-**NCTiles.jl** reads and writes tiled `Netcdf` files that represent e.g. subdivisions of Earth's surface. Inter-operability with popular climate model grids and [MeshArrays.jl](https://github.com/gaelforget/MeshArrays.jl) is an important prospect. `NCTiles.jl` derives from the `nctiles` design previously implemented in `Matlab` as part of [gcmfaces](https://github.com/gaelforget/gcmfaces) ([Forget et al. 2015](https://doi.org/10.5194/gmd-8-3071-2015>)). 
+**NCTiles.jl** reads and writes tiled `Netcdf` files that represent e.g. subdivisions of Earth's surface. Inter-operability with popular climate model grids and [MeshArrays.jl](https://github.com/gaelforget/MeshArrays.jl) is an important prospect. `NCTiles.jl` derives from the `nctiles` design previously implemented in `Matlab` as part of [gcmfaces](https://github.com/gaelforget/gcmfaces) ([Forget et al. 2015](https://doi.org/10.5194/gmd-8-3071-2015)). 
 
 ## Contents
 
