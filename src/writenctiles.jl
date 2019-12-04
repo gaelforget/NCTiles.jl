@@ -18,6 +18,7 @@ end
 function NCvar(name::String, units::String, dims::NCvar, values, atts::Union{Dict,Nothing}, backend::Module)
     return NCvar(name, units, [dims], values, atts, backend)
 end
+replacevals(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,ncvar.atts,ncvar.backend)
 
 """
     BinData
@@ -118,7 +119,8 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     end
     return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
 end
-TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GCMGridSpec(grid))
+TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GridSpec(grid))
+replacevals(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
 
 
 """
@@ -152,7 +154,7 @@ function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
     tilidx = findidx(tileinfo["tileNo"],tilenum)
 
     if isa(fldvals,MeshArrays.gcmfaces)
-        is3D = length(size(fldvals)) == 3
+        is3D = length(size(fldvals)) == 3 
         if is3D; n3 = size(fldvals)[3]; end
     else
         is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
@@ -315,9 +317,27 @@ end
 
 function readdata(flddata,tidx=1)
     if isa(flddata,BinData)
-        res = readbin(flddata,tidx)#readbin(flddata.fnames[tidx],flddata.precision,flddata.iosize,flddata.fldidx)
+        res = readbin(flddata,tidx)
     elseif isa(flddata,NCData)
         res = readncdata(flddata,tidx)
+    elseif isa(flddata,TileData)
+        if isa(flddata.vals,BinData)
+            iosize = flddata.vals.iosize
+            grid = flddata.tileinfo["XC"].grid
+            if length(iosize) == 3
+                f = Array{Array{flddata.vals.precision,2},2}(undef,grid.nFaces,iosize[3])
+                exarray = MeshArray(grid,f)
+            else
+                exarray = flddata.tileinfo["XC"]
+            end
+            res = read(readbin(flddata.vals,tidx),exarray)
+        else
+            if isa(flddata.vals,MeshArray) || isa(flddata.vals,MeshArrays.gcmfaces)
+                res = flddata.vals
+            else
+                res = flddata.vals[tidx]
+            end
+        end
     end
     return res
 end
@@ -401,13 +421,22 @@ function addVar(field::NCvar)
         #t = field.values.precision)
 end
 
+function checkdims(v0,var::NCvar)
+    dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
+    if length(size(v0)) != length(dimlist)
+        dimlist = join(dimlist,", ")
+        error("Size of $(var.name) $(size(v0)) does not match its dimension list: ($dimlist)")
+    end
+
+end
+
 """
     addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
 Fill variable with data in netcdf file using either `NCDatasets.jl`
 or `NetCDF.jl`
 """
-function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar,startidx=1)
+function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;startidx=1,land_mask=nothing)
     isBinData = isa(var.values,BinData)
     isNCData = isa(var.values,NCData)
     isTileData = isa(var.values,TileData)
@@ -419,6 +448,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar,s
     if hastimedim(var)
         ndims = ndims-1
     end
+
     if isBinData || isNCData || isTileData || isa(var.values[1],Array) # Binary files or array of timesteps
 
         if isBinData && ~ isTileData
@@ -429,16 +459,46 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar,s
             end
         end
 
-        for i = startidx:nsteps
-            if isTileData
-                writetiles.(v,Ref(var),1:var.values.numtiles,Ref(i))
-            else
-                if isBinData || isNCData
-                    v0 = readdata(var.values,i)
+        if isTileData
+            if isnothing(land_mask)
+                gridvars = GridLoad(var.values.tileinfo["XC"].grid)
+                if any(occursin.("_s",getfield.(var.dims,:name)))
+                    land_mask = gridvars["hFacS"]
+                elseif any(occursin.("_w",getfield.(var.dims,:name)))
+                    land_mask = gridvars["hFacW"]
                 else
-                    v0 = var.values[i]
+                    land_mask = gridvars["hFacC"]
                 end
-
+                for f in land_mask.fIndex
+                    for d in 1:size(land_mask,2)
+                        land_mask[f,d][land_mask[f,d].==0] .= NaN
+                        land_mask[f,d][land_mask[f,d].>0] .= 1
+                    end
+                end
+            end
+        end
+        
+        for i = startidx:nsteps
+            if isBinData || isNCData || isTileData
+                v0 = readdata(var.values,i)
+            else
+                v0 = var.values[i]
+            end
+            
+            if ~isnothing(land_mask)
+                if length(size(v0)) == 1 && length(size(land_mask)) == 2
+                    v0 = v0 .* land_mask[:,1]
+                elseif length(size(v0)) == 2 && length(size(land_mask)) == 3
+                    v0 = v0 .* land_mask[:,:,1]
+                else
+                    v0 = v0 .* land_mask
+                end
+            end
+            if isTileData
+                tmpvar = replacevals(replacevals(v0,var.values),var)
+                writetiles.(v,Ref(tmpvar),1:var.values.numtiles,Ref(i),Ref(land_mask))
+            else
+                checkdims(v0,var::NCvar)
                 if ndims == 1
                     v[:,i] = v0
                 elseif ndims == 2
@@ -451,14 +511,20 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar,s
 
     elseif isa(var.values[1],Number) # Single array of data- just insert it
         ndims = length(size(var.values))
+        if ~isnothing(land_mask)
+            v0 = var.values .* land_mask
+        else
+            v0 = var.values
+        end
+        checkdims(v0,var::NCvar)
         if ndims == 1
-            v[:] = var.values
+            v[:] = v0
         elseif ndims == 2
-            v[:,:] = var.values
+            v[:,:] = v0
         elseif ndims == 3
-            v[:,:,:] = var.values
+            v[:,:,:] = v0
         elseif ndims == 4
-            v[:,:,:,:] = var.values
+            v[:,:,:,:] = v0
         end
     else
         print("Unrecognized values")
@@ -472,37 +538,20 @@ end
 
 Helper function for writing a tile to a NetCDF file.
 """
-function writetiles(v,var,tilenum,timeidx=1)
+function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
     if isa(v,Array)
         v = v[findfirst(isequal(var.name),name.(v))]
     end
-    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize; grid = tileinfo["XC"].grid
-    if isa(var.values.vals,BinData)
-        iosize = var.values.vals.iosize
-        prec = var.values.precision
-        if isa(var.values.vals.fnames,Array)
-            fnames = var.values.vals.fnames
-        else
-            fnames = [var.values.vals.fnames]
-        end
-        if length(iosize) == 3
-            f = Array{Array{prec,2},2}(undef,grid.nFaces,iosize[3])
-            exarray = MeshArray(grid,f)
-        else
-            exarray = tileinfo["XC"]
-        end
-        v0 = read(readbin(fnames[timeidx],prec,iosize,
-                                        var.values.vals.fldidx),exarray)
+    tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
+    if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
+        v0 = var.values.vals
     else
-        if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
-            v0 = var.values.vals
-        else
-            v0 = var.values.vals[timeidx]
-        end
+        v0 = readdata(var.values,timeidx)
     end
-
+    
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
-    numdims = length(size(v0))
+    checkdims(v0,var::NCvar)
+    numdims = ndims(v0)
     if numdims == 1
         v[:,timeidx] = v0
     elseif numdims == 2
@@ -525,7 +574,7 @@ function addDimData(ds,dimvar::NCvar)
 end
 
 """
-    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README;
+    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
                 fillval=NaN, missval=NaN, itile=1, ntile=1)
 
 Create NetCDF file and add variable + dimension definitions
@@ -533,7 +582,7 @@ using either `NCDatasets.jl` or `NetCDF.jl`
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
                     fillval=NaN, missval=NaN, itile=1, ntile=1)
-
+    
     if isa(field,Dict)
 
         dims = unique(vcat([field[v].dims for v in keys(field)]...))

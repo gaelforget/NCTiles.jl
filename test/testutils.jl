@@ -134,18 +134,29 @@ function testfile(fname,checkfld)
     elseif isa(checkfld.values,TileData)
         itile = Int(ds.attrib["itile"])
         varcheck["values"] = true
+        grid = checkfld.values.tileinfo["XC"].grid
+        gridvars = GridLoad(grid)
+        land = gridvars["hFacC"]
+        for f in land.fIndex
+            for d in 1:size(land,2)
+                land[f,d][land[f,d].==0] .= NaN
+                land[f,d][land[f,d].>0] .= 1
+            end
+        end
         if isa(checkfld.values.vals,BinData)
             for t in 1:length(checkfld.values.vals.fnames)
                 data = read(readbin(checkfld.values.vals.fnames[t],
                                     checkfld.values.vals.precision,checkfld.values.vals.iosize,
                                     checkfld.values.vals.fldidx),checkfld.values.tileinfo["XC"])
                 testdata = NCTiles.gettile(data,checkfld.values.tileinfo,checkfld.values.tilesize,itile)
+                landtile = NCTiles.gettile(land,checkfld.values.tileinfo,checkfld.values.tilesize,itile)
+                testdata = applylandmask(testdata,landtile)
                 if length(size(dsvar)) == 3
-                    varcheck["values"] = varcheck["values"] && testdata == dsvar[:,:,t]
+                    varcheck["values"] = varcheck["values"] && isequal(testdata,dsvar[:,:,t])
                 elseif length(size(dsvar)) == 4
-                    varcheck["values"] = varcheck["values"] && testdata == dsvar[:,:,:,t]
+                    varcheck["values"] = varcheck["values"] && isequal(testdata,dsvar[:,:,:,t])
                 elseif length(size(dsvar)) == 2
-                    varcheck["values"] = varcheck["values"] && testdata == dsvar[:,t]
+                    varcheck["values"] = varcheck["values"] && isequal(testdata,dsvar[:,t])
                 end
             end
         else
@@ -172,9 +183,30 @@ function testfile(fname,checkfld)
                 end
             end
         end
-        println("The following file elements do not match the field elements:\n"*missmatchstring[3:end])
+        println("The following file elements do not match the field "*checkfld.name*" elements:\n"*missmatchstring[3:end])
     end
     return pass
+end
+
+function applylandmask(data,land)
+    if isa(data,NCvar)
+        if length(data.dims) == 2
+                dataout = NCTiles.replacevals(
+                NCTiles.replacevals(data.values.*land[:,1],data.values),
+                data)
+        else
+            dataout = NCTiles.replacevals(
+                NCTiles.replacevals(data.values.*land,data.values),
+                data)
+        end
+    else
+        if ndims(data) == 2
+            dataout = data.*land[:,:,1]
+        else
+            dataout = data.*land
+        end
+    end
+    return dataout
 end
 
 function maketestdata()

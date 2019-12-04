@@ -90,10 +90,15 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
                     "area" => NCvar("area","m^2",dims[1:2],tilarea,Dict(["long_name" => "grid cell area", "standard_name" => "cell_area"]),NCDatasets),
                     "land" => NCvar("land","1",dims[1:3],tilland,Dict(["long_name" => "land mask", "standard_name" => "land_binary_mask"]),NCDatasets),
                     "thic" => NCvar("thic","m",dims[3],thic,Dict("standard_name" => "cell_thickness"),NCDatasets)
-        ])
+        ]) 
         writetestfile(ncfiltile2d,flds,NCDatasets)
         savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:tilfld2d.numtiles),4,"0").*".nc")
 
+        for k in keys(flds)
+            if k != "thic" && k != "land" && isa(flds[k].values,MeshArray)
+                applylandmask(flds[k],land)
+            end
+        end
         @test all([testfile(fname,flds[fld]) for fname in savenames for fld in keys(flds)])
     end
 
