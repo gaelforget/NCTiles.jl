@@ -18,7 +18,14 @@ end
 function NCvar(name::String, units::String, dims::NCvar, values, atts::Union{Dict,Nothing}, backend::Module)
     return NCvar(name, units, [dims], values, atts, backend)
 end
-replacevals(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,ncvar.atts,ncvar.backend)
+
+"""
+    replacevalues(vals,ncvar::NCvar)
+
+Helper function: Replaces the "values" attribute of an ncvar without changing
+anything else. Used to apply land mask. Not exported.
+"""
+replacevalues(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,ncvar.atts,ncvar.backend)
 
 """
     BinData
@@ -59,7 +66,12 @@ struct NCData
     precision::Type
 end
 
+"""
+    getnsteps(d)
 
+Helper function: Determines number of time steps in data d. Input d can be
+BinData, NCData, TileData, or an Array. Not exported.
+"""
 function getnsteps(d)
     if isa(d,BinData)
         if isa(d.fnames,Array)
@@ -120,7 +132,13 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
 end
 TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GridSpec(grid))
-replacevals(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
+"""
+    replacevalues(vals,td::TileData)
+
+Helper function: Replaces the "values" attribute of a TilData struct without changing
+anything else. Used to apply land mask. Not exported.
+"""
+replacevalues(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
 
 
 """
@@ -250,7 +268,7 @@ end
 """
     readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
 
-Read in a binary file as an array as previously done via `MeshArrays.read_bin`
+Read in a binary file as an array as previously done via `MeshArrays.read_bin`.  Not exported.
 """
 function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
     n3 = 1
@@ -294,7 +312,7 @@ readbin(flddata::BinData,tidx=1) = readbin(flddata.fnames[tidx],flddata.precisio
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
 Read netcdf file as specified in `NCData` argument. Optional
-argument `i` can be used to read a specific records / times.
+argument `i` can be used to read a specific records / times. Not exported.
 """
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
@@ -315,6 +333,11 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     return values
 end
 
+"""
+    readdata(flddata,tidx=1)
+
+Generic wrapper function to read data from a file regardless of file/data type. Not exported.
+"""
 function readdata(flddata,tidx=1)
     if isa(flddata,BinData)
         res = readbin(flddata,tidx)
@@ -421,7 +444,13 @@ function addVar(field::NCvar)
         #t = field.values.precision)
 end
 
-function checkdims(v0,var::NCvar)
+"""
+    checkdims(v0::Array,var::NCvar)
+
+Helper function: Checks that the size of the data about to be written to the file
+matches the provided dimensions. Not exported.
+"""
+function checkdims(v0::Array,var::NCvar)
     dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
     if length(size(v0)) != length(dimlist)
         dimlist = join(dimlist,", ")
@@ -495,7 +524,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 end
             end
             if isTileData
-                tmpvar = replacevals(replacevals(v0,var.values),var)
+                tmpvar = replacevalues(replacevalues(v0,var.values),var)
                 writetiles.(v,Ref(tmpvar),1:var.values.numtiles,Ref(i),Ref(land_mask))
             else
                 checkdims(v0,var::NCvar)

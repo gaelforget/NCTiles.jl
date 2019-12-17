@@ -191,12 +191,12 @@ end
 function applylandmask(data,land)
     if isa(data,NCvar)
         if length(data.dims) == 2
-                dataout = NCTiles.replacevals(
-                NCTiles.replacevals(data.values.*land[:,1],data.values),
+                dataout = NCTiles.replacevalues(
+                NCTiles.replacevalues(data.values.*land[:,1],data.values),
                 data)
         else
-            dataout = NCTiles.replacevals(
-                NCTiles.replacevals(data.values.*land,data.values),
+            dataout = NCTiles.replacevalues(
+                NCTiles.replacevalues(data.values.*land,data.values),
                 data)
         end
     else
