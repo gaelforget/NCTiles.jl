@@ -129,7 +129,7 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     else
         prec = Float32
     end
-    return TileData(vals,tileinfo,tilesize,Float32,Int(maximum(tileinfo["tileNo"])))
+    return TileData(vals,tileinfo,tilesize,prec,Int(maximum(tileinfo["tileNo"])))
 end
 TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GridSpec(grid))
 """
