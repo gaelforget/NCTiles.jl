@@ -123,7 +123,10 @@ Construct a TileData struct. First generate the tileinfo, precision, and numtile
 """
 function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     ni,nj = tilesize
-    tileinfo = findtiles(ni,nj,grid)
+    tileinfo = Dict("tileNo" => TileMap(grid,ni,nj))
+    gridvars=GridLoad(grid)
+    tileinfo["XC"]=gridvars["XC"]
+    tileinfo["YC"]=gridvars["YC"]
     if isa(vals,BinData)
         prec = vals.precision
     else
@@ -172,7 +175,7 @@ function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
     tilidx = findidx(tileinfo["tileNo"],tilenum)
 
     if isa(fldvals,MeshArrays.gcmfaces)
-        is3D = length(size(fldvals)) == 3 
+        is3D = length(size(fldvals)) == 3
         if is3D; n3 = size(fldvals)[3]; end
     else
         is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
@@ -506,14 +509,14 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 end
             end
         end
-        
+
         for i = startidx:nsteps
             if isBinData || isNCData || isTileData
                 v0 = readdata(var.values,i)
             else
                 v0 = var.values[i]
             end
-            
+
             if ~isnothing(land_mask)
                 if length(size(v0)) == 1 && length(size(land_mask)) == 2
                     v0 = v0 .* land_mask[:,1]
@@ -577,7 +580,7 @@ function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
     else
         v0 = readdata(var.values,timeidx)
     end
-    
+
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
     checkdims(v0,var::NCvar)
     numdims = ndims(v0)
@@ -603,7 +606,7 @@ function addDimData(ds,dimvar::NCvar)
 end
 
 """
-    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
+    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README;
                 fillval=NaN, missval=NaN, itile=1, ntile=1)
 
 Create NetCDF file and add variable + dimension definitions
@@ -611,7 +614,7 @@ using either `NCDatasets.jl` or `NetCDF.jl`
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
                     fillval=NaN, missval=NaN, itile=1, ntile=1)
-    
+
     if isa(field,Dict)
 
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
