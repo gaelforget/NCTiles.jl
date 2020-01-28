@@ -272,7 +272,7 @@ end
 function getgrid()
 
     testdir = abspath(joinpath(dirname(pathof(NCTiles)),"..","test"))
-    griddir = joinpath(testdir,"GRID_CS32")
+    griddir = joinpath(testdir,"GRID_CS32/")
     if ~ispath(griddir)
         try
             file = joinpath(testdir,"GRID_CS32.tar.gz")
@@ -286,5 +286,5 @@ function getgrid()
         end
     end
 
-    return testdir
+    return griddir
 end
