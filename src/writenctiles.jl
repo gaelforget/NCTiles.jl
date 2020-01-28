@@ -134,7 +134,7 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     end
     return TileData(vals,tileinfo,tilesize,prec,Int(maximum(tileinfo["tileNo"])))
 end
-TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GridSpec(grid))
+TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize::Tuple,GridSpec(grid))
 """
     replacevalues(vals,td::TileData)
 
@@ -211,6 +211,9 @@ function gettiles(tilfld,tilenum::Int)
 
     return tilfld,tillat,tillon
 end
+
+#Commented since "WARNING: import of Base.getindex into NCTiles conflicts with an existing identifier; ignored."
+#import Base: getindex
 
 """
     getindex(v::NCvar,i::Integer)

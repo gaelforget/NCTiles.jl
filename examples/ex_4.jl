@@ -1,5 +1,5 @@
 using MeshArrays, NCDatasets, NCTiles
-grid = GridSpec("LLC90","grids/")
+grid = GridSpec("LatLonCap","grids/GRID_LLC90/")
 
 exampledir = joinpath("data","ex4")
 datadir = joinpath(exampledir,"model_output")
@@ -54,7 +54,7 @@ for fidx in fldidx
                     "area" => NCvar("area","m^2",dims[1:2],tilarea,Dict(["long_name" => "grid cell area", "standard_name" => "cell_area"]),NCDatasets),
                     "land" => NCvar("land","1",dims[1:3],tilland,Dict(["long_name" => "land mask", "standard_name" => "land_binary_mask"]),NCDatasets),
                     "thic" => NCvar("thic","m",dims[3],thic,Dict("standard_name" => "cell_thickness"),NCDatasets)
-        ]) 
+        ])
         savepath = joinpath(saveloc,fldname)
         if !isdir(savepath); mkpath(savepath); end
 
