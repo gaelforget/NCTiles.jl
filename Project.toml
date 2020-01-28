@@ -11,8 +11,7 @@ NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-julia = "0.7, 1"
 MeshArrays = "0.2.4"
 NCDatasets = "0.9.5"
 NetCDF = "0.8.2"
-
+julia = "0.7, 1"

@@ -248,7 +248,7 @@ function maketestdata()
     end
 
     tilesize = (16,16)
-    grid = GridSpec("CubeSphere",getgrid()*"/GRID_CS32/")
+    grid = GridSpec("CubeSphere",getgrid())
     for f in fnamestile2d
         cp(joinpath(grid.path,"Depth.data"),f,force=true)
     end
