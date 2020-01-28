@@ -3,8 +3,8 @@ module NCTiles
 using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 #using MITgcmTools
 
-include("writenctiles.jl")
-include("utilities.jl")
+include("Write.jl")
+include("Read.jl")
 include("TileSupport.jl")
 include("HelperFunctions.jl")
 
