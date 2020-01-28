@@ -1,10 +1,11 @@
 module NCTiles
 
-using NetCDF, MeshArrays, Printf, NCDatasets
+using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 #using MITgcmTools
 
 include("writenctiles.jl")
 include("utilities.jl")
+include("TileSupport.jl")
 
 export NCvar, BinData, NCData, TileData, readbin, readncfile
 export createfile, addDim, addVar, addData, addDimData

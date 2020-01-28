@@ -1,26 +1,5 @@
 
 """
-    findidx(A,val)
-
-Helper function for getting the indices for tiles. A is a gcmfaces struct, val is a
-    numeric value to get the indices of. Returns a Dict of the indices for each face.
-    Not currently exported. Maybe move to MeshArrays?
-"""
-function findidx(A,val)
-    tileidx = Dict()
-    if isa(A,MeshArrays.gcmfaces)
-        nfaces = A.nFaces
-    elseif isa(A,MeshArray)
-        nfaces = A.grid.nFaces
-    end
-    for i = 1:nfaces
-        idx = findall(x->x==val,A.f[i])
-        tileidx[i] = [x for x in idx]
-    end
-    return tileidx
-end
-
-"""
     readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
 
 Read in a binary file to an Array.
@@ -115,4 +94,79 @@ function readdata(flddata,tidx=1)
         end
     end
     return res
+end
+
+"""
+    readncfile(fname,backend::Module=NCDatasets)
+
+Read in a NetCDF file and return variables/dimensions as `NCvar` structs, and
+    file attributes as `Dict`. Large variables/dimensions are not loaded into
+    memory. This can use either `NCDatasets.jl` or `NetCDF.jl`
+"""
+function readncfile(fname,backend::Module=NCDatasets)
+
+    ds = Dataset(fname)
+
+    dims = Dict{AbstractString,NCvar}()
+    vars = Dict{AbstractString,NCvar}()
+
+    for k in keys(ds)
+        if ~haskey(dims,k)
+            k_units = get(ds[k].attrib,"units","")
+            k_atts = Dict(ds[k].attrib)
+            if length(dimnames(ds[k])) == 1 && k == dimnames(ds[k])[1] # this variable is also a dimension
+                k_dims = length(ds[k])
+                if length(size(ds[k])) == 1
+                    k_values = ds[k][:]
+                elseif length(size(ds[k])) == 2
+                    k_values = ds[k][:,:]
+                else
+                    k_values = NCData(fname,k,backend,typeof(ds[k].var[:][1])) # Pointer to this variable in the file
+                end
+                if !isa(k_values,NCData) && !any(isa.(k_values,Ref(Missing)))
+                    k_values = typeof(k_values[1]).(k_values)
+                end
+                dims[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
+            else # Not a dimension
+                k_dims = Array{NCvar,1}()
+                for d in dimnames(ds[k])
+                    #global k_dims,dims
+                    if !haskey(dims,d) # Add the dimension
+                        d_units = get(ds[d].attrib,"units","")
+                        d_dims = length(ds[d])
+                        d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
+                        d_atts = Dict(ds[d].attrib)
+                        dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
+                    end
+                    k_dims = cat(k_dims,dims[d],dims=1)
+                end
+                hasTimeDim = hastimedim(k_dims)
+                if  ~hasTimeDim && length(k_dims) == 1# extra variable, not main field, just load the data now
+                    k_values = ds[k][:]
+                elseif ~hasTimeDim && length(k_dims) == 2
+                    k_values = ds[k][:,:]
+                elseif ~hasTimeDim && length(k_dims) == 3
+                    k_values = ds[k][:,:,:]
+                elseif hasTimeDim
+                    k_values = NCData(fname,k,backend,eltype(ds[k].var[:])) # Pointer to this variable in the file
+                end
+
+                if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
+                    k_values = typeof(k_values[1]).(k_values)
+                end
+
+                vars[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
+            end
+        end
+    end
+
+    atts = ["_FillValue","missing_value","itile","ntile"]
+    fileatts = Dict()
+    for a in atts
+        if haskey(ds.attrib,a)
+            fileatts[a] = ds.attrib[a]
+        end
+    end
+    close(ds)
+    return vars,dims,fileatts
 end

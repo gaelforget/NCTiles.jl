@@ -1,4 +1,3 @@
-using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 
 """
     NCvar
@@ -142,75 +141,6 @@ Helper function: Replaces the "values" attribute of a TilData struct without cha
 anything else. Used to apply land mask. Not exported.
 """
 replacevalues(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
-
-
-"""
-    gettile(fldvals,tileinfo,tilesize,tilenum::Int)
-
-Helper function for retrieving a tile from a gcmfaces struct as a numeric Array. Not
-    currently exported.
-"""
-function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
-    tilidx = findidx(tileinfo["tileNo"],tilenum)
-
-    if isa(fldvals,MeshArrays.gcmfaces)
-        is3D = length(size(fldvals)) == 3
-        if is3D; n3 = size(fldvals)[3]; end
-    else
-        is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
-        if is3D; n3 = size(fldvals)[2]; end
-    end
-
-    if is3D # has depth
-        tilfld = Array{Any,3}(nothing,0,tilesize[2],n3)
-    else
-        tilfld = Array{Any,2}(nothing,0,tilesize[2])
-    end
-    if isa(fldvals,MeshArrays.gcmfaces)
-        nfaces = fldvals.nFaces
-    elseif isa(fldvals,MeshArray)
-        nfaces = fldvals.grid.nFaces
-    end
-    for iF = 1:nfaces
-        if ~isempty(tilidx[iF])
-            imin = minimum(tilidx[iF])[1]; imax = maximum(tilidx[iF])[1]
-            jmin = minimum(tilidx[iF])[2]; jmax = maximum(tilidx[iF])[2]
-            if is3D
-                if isa(fldvals,MeshArray)
-                    tilfld = [tilfld; cat([fldvals.f[iF,d][imin:imax,jmin:jmax] for d in 1:n3]...,dims=3)]
-                else
-                    tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax,:]]
-                end
-            else
-                tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax]]
-            end
-        end
-    end
-
-    if is3D
-        tilfld = reshape(tilfld,tilesize[1],tilesize[2],:)
-    else
-        tilfld = reshape(tilfld,tilesize[1],tilesize[2])
-    end
-
-    return tilfld
-end
-
-"""
-    gettiles(fldvals,tilenum::Int)
-
-Helper function for retrieving a tile from a gcmfaces struct as a numeric Array along
-    with associated latitude and longitude. Not currently exported.
-"""
-function gettiles(tilfld,tilenum::Int)
-    tilesize = tilfld.tilesize
-
-    tilfld = gettile(tilfld.vals,tilfld.tileinfo,tilesize,tilenum)
-    tillat = gettile(tilfld.tileinfo["XC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
-    tillon = gettile(tilfld.tileinfo["YC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
-
-    return tilfld,tillat,tillon
-end
 
 #Commented since "WARNING: import of Base.getindex into NCTiles conflicts with an existing identifier; ignored."
 #import Base: getindex
@@ -570,80 +500,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
 
 end
 
-"""
-    readncfile(fname,backend::Module=NCDatasets)
-
-Read in a NetCDF file and return variables/dimensions as `NCvar` structs, and
-    file attributes as `Dict`. Large variables/dimensions are not loaded into
-    memory. This can use either `NCDatasets.jl` or `NetCDF.jl`
-"""
-function readncfile(fname,backend::Module=NCDatasets)
-
-    ds = Dataset(fname)
-
-    dims = Dict{AbstractString,NCvar}()
-    vars = Dict{AbstractString,NCvar}()
-
-    for k in keys(ds)
-        if ~haskey(dims,k)
-            k_units = get(ds[k].attrib,"units","")
-            k_atts = Dict(ds[k].attrib)
-            if length(dimnames(ds[k])) == 1 && k == dimnames(ds[k])[1] # this variable is also a dimension
-                k_dims = length(ds[k])
-                if length(size(ds[k])) == 1
-                    k_values = ds[k][:]
-                elseif length(size(ds[k])) == 2
-                    k_values = ds[k][:,:]
-                else
-                    k_values = NCData(fname,k,backend,typeof(ds[k].var[:][1])) # Pointer to this variable in the file
-                end
-                if !isa(k_values,NCData) && !any(isa.(k_values,Ref(Missing)))
-                    k_values = typeof(k_values[1]).(k_values)
-                end
-                dims[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
-            else # Not a dimension
-                k_dims = Array{NCvar,1}()
-                for d in dimnames(ds[k])
-                    #global k_dims,dims
-                    if !haskey(dims,d) # Add the dimension
-                        d_units = get(ds[d].attrib,"units","")
-                        d_dims = length(ds[d])
-                        d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
-                        d_atts = Dict(ds[d].attrib)
-                        dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
-                    end
-                    k_dims = cat(k_dims,dims[d],dims=1)
-                end
-                hasTimeDim = hastimedim(k_dims)
-                if  ~hasTimeDim && length(k_dims) == 1# extra variable, not main field, just load the data now
-                    k_values = ds[k][:]
-                elseif ~hasTimeDim && length(k_dims) == 2
-                    k_values = ds[k][:,:]
-                elseif ~hasTimeDim && length(k_dims) == 3
-                    k_values = ds[k][:,:,:]
-                elseif hasTimeDim
-                    k_values = NCData(fname,k,backend,eltype(ds[k].var[:])) # Pointer to this variable in the file
-                end
-
-                if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
-                    k_values = typeof(k_values[1]).(k_values)
-                end
-
-                vars[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
-            end
-        end
-    end
-
-    atts = ["_FillValue","missing_value","itile","ntile"]
-    fileatts = Dict()
-    for a in atts
-        if haskey(ds.attrib,a)
-            fileatts[a] = ds.attrib[a]
-        end
-    end
-    close(ds)
-    return vars,dims,fileatts
-end
+##
 
 """
     istimedim(d::NCvar)
