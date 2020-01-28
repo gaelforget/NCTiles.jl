@@ -1,16 +1,15 @@
 module NCTiles
 
 using NetCDF, MeshArrays, Printf, NCDatasets
+#using MITgcmTools
 
-#include("utilities.jl")
-#export read_nctiles
+include("writenctiles.jl")
+include("utilities.jl")
 
 import Base: getindex
 
-export NCvar, BinData, NCData, TileData, readbin
-export createfile, addDim, addVar, addData, addDimData,
-        readncfile, parsemeta, readAvailDiagnosticsLog
-        
-include("writenctiles.jl")
+export NCvar, BinData, NCData, TileData, readbin, readncfile
+export createfile, addDim, addVar, addData, addDimData
+
 
 end # module
