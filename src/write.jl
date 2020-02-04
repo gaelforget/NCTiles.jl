@@ -393,7 +393,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     end
 
     if isa(fieldnames,Array)
-        fieldnamestring = join(fieldnames,",")
+        fieldnamestring = join(filter(x -> x !== "climatology_bounds", fieldnames),",")
     else
         fieldnamestring = fieldnames
     end
@@ -445,8 +445,6 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     if ~isnothing(attribs)
         file_atts = vcat(file_atts,[k => attribs[k] for k in keys(attribs)])
     end
-
-    println(file_atts)
 
     if backend == NCDatasets
         ds =  Dataset(filename,"c",attrib=file_atts)
