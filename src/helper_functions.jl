@@ -16,7 +16,7 @@ function getnsteps(d)
         ds = Dataset(d.fname)
         tdim = dimnames(ds[d.varname])[end]
         timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
-        if any(occursin.(timeUnits,Ref(lowercase(ds[tdim].attrib["units"]))))
+        if any(occursin.(timeUnits,Ref(lowercase(ds[tdim].attrib["units"])))) || get(ds[tdim].attrib,"long_name","")=="Time coordinate"
             nsteps = length(ds[tdim])
         else
             nsteps = 1
@@ -39,7 +39,11 @@ Helper function: Checks that the size of the data about to be written to the fil
 matches the provided dimensions. Not exported.
 """
 function checkdims(v0::Array,var::NCvar)
-    dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
+    if isa(var.values[1],Number)
+        dimlist = getfield.(var.dims,:name)
+    else
+        dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
+    end
     if length(size(v0)) != length(dimlist)
         dimlist = join(dimlist,", ")
         error("Size of $(var.name) $(size(v0)) does not match its dimension list: ($dimlist)")
@@ -55,7 +59,7 @@ Helper function: determines whether d is a time dimension. Not exported.
 function istimedim(d::NCvar)
 
     timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
-    return any(occursin.(timeUnits,Ref(lowercase(d.units))))
+    return any(occursin.(timeUnits,Ref(lowercase(d.units)))) || get(d.atts,"long_name","")=="Time coordinate"
 
 end
 
