@@ -448,3 +448,31 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     end
 
 end
+
+
+function writeClimateGrid(C,savename,README="")
+
+    # dimension_dict is "lat" => latname; "lon" => lonname
+    # For now just doing regular square lat/lon grid
+    
+    x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
+    timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
+    
+    
+    dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
+            NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
+            NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
+            ]
+    
+    myfld = NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
+    
+    
+    ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=C.globalattribs)
+    
+    # Add field and dimension data
+    addData(fldvar,myfld)
+    addDimData.(Ref(ds),myfld.dims)
+    
+    # Close the file
+    close(ds)
+end
