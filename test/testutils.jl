@@ -11,7 +11,7 @@ function writetestfile(fname,field,package)
         savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:field["data2d"].values.numtiles),4,"0").*".nc")
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
         datasets = [createfile(savenames[tidx],field,README,ntile = length(savenames), itile = tidx) for tidx in 1:length(savenames)]
-        
+
         ds = [x[1] for x in datasets]
         fldvars = [x[2] for x in datasets]
         #dims = [x[3] for x in datasets]
@@ -213,18 +213,18 @@ function maketestdata()
     lon=-180:20:180; lat=-90:20:90;
     depth = 5:10:100
     n1,n2,n3 = (length(lon),length(lat),length(depth))
-    
+
     timeinterval = 1
     nsteps = 5
     time_steps = timeinterval/2:timeinterval:timeinterval*nsteps
     time_units = "days from 1992-01-01"
-    
+
     data2d = [ones(Float32,n1,n2) for t in 1:nsteps]
     data3d = [ones(Float32,n1,n2,n3) for t in 1:nsteps]
     units = "test_units"
     longname2d = "Two Dimensional Test Data"
     longname3d = "Three Dimensional Test Data"
-    
+
     dims = [NCvar("lon_c","degrees_east",n1,lon,Dict("long_name" => "longitude"),NCDatasets),
             NCvar("lat_c","degrees_north",n2,lat,Dict("long_name" => "latitude"),NCDatasets),
             NCvar("dep_c","m",n3,depth,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NCDatasets),
@@ -242,13 +242,13 @@ function maketestdata()
     for t in 1:length(data2d)
         write(fnames2d[t],hton.(data2d[t]))
     end
-    
+
     for t in 1:length(data3d)
         write(fnames3d[t],hton.(data3d[t]))
     end
 
     tilesize = (16,16)
-    grid = GridSpec("CS32",getgrid()*"/")
+    grid = GridSpec("CubeSphere",getgrid())
     for f in fnamestile2d
         cp(joinpath(grid.path,"Depth.data"),f,force=true)
     end
@@ -272,7 +272,7 @@ end
 function getgrid()
 
     testdir = abspath(joinpath(dirname(pathof(NCTiles)),"..","test"))
-    griddir = joinpath(testdir,"GRID_CS32")
+    griddir = joinpath(testdir,"GRID_CS32/")
     if ~ispath(griddir)
         try
             file = joinpath(testdir,"GRID_CS32.tar.gz")
@@ -285,6 +285,6 @@ function getgrid()
             println("Could not download and extract grid. To fix, get the grid from https://github.com/gaelforget/GRID_CS32/ and put it in the "*testdir*" directory.")
         end
     end
-        
-    return testdir
+
+    return griddir
 end

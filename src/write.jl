@@ -1,4 +1,3 @@
-using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 
 """
     NCvar
@@ -67,41 +66,6 @@ struct NCData
 end
 
 """
-    getnsteps(d)
-
-Helper function: Determines number of time steps in data d. Input d can be
-BinData, NCData, TileData, or an Array. Not exported.
-"""
-function getnsteps(d)
-    if isa(d,BinData)
-        if isa(d.fnames,Array)
-            nsteps = length(d.fnames)
-        else
-            nsteps = 1
-        end
-    elseif isa(d,NCData)
-        ds = Dataset(d.fname)
-        tdim = dimnames(ds[d.varname])[end]
-        timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
-        if any(occursin.(timeUnits,Ref(lowercase(ds[tdim].attrib["units"]))))
-            nsteps = length(ds[tdim])
-        else
-            nsteps = 1
-        end
-    elseif isa(d,TileData)
-        nsteps = getnsteps(d.vals)
-    elseif isa(d,Array) && isa(d[1],Array)
-        nsteps = length(d)
-    else
-        nsteps = 1
-    end
-
-    return nsteps
-end
-
-
-
-"""
     TileData{T}
 
 Data structure containing either a `MeshArray` struct or `BinData` struct (see `vals`),
@@ -123,7 +87,10 @@ Construct a TileData struct. First generate the tileinfo, precision, and numtile
 """
 function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     ni,nj = tilesize
-    tileinfo = findtiles(ni,nj,grid)
+    tileinfo = Dict("tileNo" => TileMap(grid,ni,nj))
+    gridvars=GridLoad(grid)
+    tileinfo["XC"]=gridvars["XC"]
+    tileinfo["YC"]=gridvars["YC"]
     if isa(vals,BinData)
         prec = vals.precision
     else
@@ -131,7 +98,7 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     end
     return TileData(vals,tileinfo,tilesize,prec,Int(maximum(tileinfo["tileNo"])))
 end
-TileData(vals,tilesize::Tuple,grid::String="LLC90") = TileData(vals,tilesize::Tuple,GridSpec(grid))
+TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize::Tuple,GridSpec(grid))
 """
     replacevalues(vals,td::TileData)
 
@@ -140,95 +107,8 @@ anything else. Used to apply land mask. Not exported.
 """
 replacevalues(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
 
-
-"""
-    findidx(A,val)
-
-Helper function for getting the indices for tiles. A is a gcmfaces struct, val is a
-    numeric value to get the indices of. Returns a Dict of the indices for each face.
-    Not currently exported. Maybe move to MeshArrays?
-"""
-function findidx(A,val)
-    tileidx = Dict()
-    if isa(A,MeshArrays.gcmfaces)
-        nfaces = A.nFaces
-    elseif isa(A,MeshArray)
-        nfaces = A.grid.nFaces
-    end
-    for i = 1:nfaces
-        idx = findall(x->x==val,A.f[i])
-        tileidx[i] = [x for x in idx]
-    end
-    return tileidx
-end
-
-"""
-    gettile(fldvals,tileinfo,tilesize,tilenum::Int)
-
-Helper function for retrieving a tile from a gcmfaces struct as a numeric Array. Not
-    currently exported.
-"""
-function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
-    tilidx = findidx(tileinfo["tileNo"],tilenum)
-
-    if isa(fldvals,MeshArrays.gcmfaces)
-        is3D = length(size(fldvals)) == 3 
-        if is3D; n3 = size(fldvals)[3]; end
-    else
-        is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
-        if is3D; n3 = size(fldvals)[2]; end
-    end
-
-    if is3D # has depth
-        tilfld = Array{Any,3}(nothing,0,tilesize[2],n3)
-    else
-        tilfld = Array{Any,2}(nothing,0,tilesize[2])
-    end
-    if isa(fldvals,MeshArrays.gcmfaces)
-        nfaces = fldvals.nFaces
-    elseif isa(fldvals,MeshArray)
-        nfaces = fldvals.grid.nFaces
-    end
-    for iF = 1:nfaces
-        if ~isempty(tilidx[iF])
-            imin = minimum(tilidx[iF])[1]; imax = maximum(tilidx[iF])[1]
-            jmin = minimum(tilidx[iF])[2]; jmax = maximum(tilidx[iF])[2]
-            if is3D
-                if isa(fldvals,MeshArray)
-                    tilfld = [tilfld; cat([fldvals.f[iF,d][imin:imax,jmin:jmax] for d in 1:n3]...,dims=3)]
-                else
-                    tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax,:]]
-                end
-            else
-                tilfld = [tilfld; fldvals.f[iF][imin:imax,jmin:jmax]]
-            end
-        end
-    end
-
-    if is3D
-        tilfld = reshape(tilfld,tilesize[1],tilesize[2],:)
-    else
-        tilfld = reshape(tilfld,tilesize[1],tilesize[2])
-    end
-
-    return tilfld
-end
-
-"""
-    gettiles(fldvals,tilenum::Int)
-
-Helper function for retrieving a tile from a gcmfaces struct as a numeric Array along
-    with associated latitude and longitude. Not currently exported.
-"""
-function gettiles(tilfld,tilenum::Int)
-    tilesize = tilfld.tilesize
-
-    tilfld = gettile(tilfld.vals,tilfld.tileinfo,tilesize,tilenum)
-    tillat = gettile(tilfld.tileinfo["XC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
-    tillon = gettile(tilfld.tileinfo["YC"],tilfld.tileinfo,tilfld.tilesize,tilenum)
-
-    return tilfld,tillat,tillon
-end
+#Commented since "WARNING: import of Base.getindex into NCTiles conflicts with an existing identifier; ignored."
+#import Base: getindex
 
 """
     getindex(v::NCvar,i::Integer)
@@ -264,107 +144,6 @@ Retrieve the ith time step from the NetCDF file.
 function getindex(d::NCData,i) # Gets data at time index i
     readncdata(d,i)
 end
-
-"""
-    readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
-
-Read in a binary file as an array as previously done via `MeshArrays.read_bin`.  Not exported.
-"""
-function readbin(fname::String,prec::Type,iosize::Tuple,fldidx=1)
-    n3 = 1
-    if length(iosize) == 3
-        n1,n2,n3 = iosize
-    else
-        n1,n2 = iosize
-    end
-
-    if prec == Float64
-        reclen = 8
-    else
-        reclen = 4
-    end
-
-    #if isempty(n3)
-    #    n3=Int64(stat(fname).size/n1/n2/reclen)
-    #end
-
-    field = Array{prec,1}(undef,(n1*n2*n3))
-    fid = open(fname)
-    if fldidx != 1
-        seek(fid,n1*n2*n3*(fldidx-1)*reclen)
-    end
-    read!(fid,field)
-    close(fid)
-    field = hton.(field)
-
-    n3>1 ? s=(n1,n2,n3) : s=(n1,n2)
-    return reshape(field,s)
-
-end
-
-"""
-    readbin(flddata::BinData,tidx=1)
-
-Read in a binary file as an array as previously done via `MeshArrays.read_bin`
-"""
-readbin(flddata::BinData,tidx=1) = readbin(flddata.fnames[tidx],flddata.precision,flddata.iosize,flddata.fldidx)
-"""
-    readncdata(var::NCData,i::Union{Colon,Integer}=:)
-
-Read netcdf file as specified in `NCData` argument. Optional
-argument `i` can be used to read a specific records / times. Not exported.
-"""
-function readncdata(var::NCData,i::Union{Colon,Integer}=:)
-    ds = Dataset(var.fname)
-    ndims = length(size(ds[var.varname]))
-
-    if ndims == 1
-        values = ds[var.varname][i]
-    elseif ndims == 2
-        values = ds[var.varname][:,i]
-    elseif ndims == 3
-        values = ds[var.varname][:,:,i]
-    elseif ndims == 4
-        values = ds[var.varname][:,:,:,i]
-    else
-        println("Variables greater than four dimensions not currently supported")
-    end
-    close(ds)
-    return values
-end
-
-"""
-    readdata(flddata,tidx=1)
-
-Generic wrapper function to read data from a file regardless of file/data type. Not exported.
-"""
-function readdata(flddata,tidx=1)
-    if isa(flddata,BinData)
-        res = readbin(flddata,tidx)
-    elseif isa(flddata,NCData)
-        res = readncdata(flddata,tidx)
-    elseif isa(flddata,TileData)
-        if isa(flddata.vals,BinData)
-            iosize = flddata.vals.iosize
-            grid = flddata.tileinfo["XC"].grid
-            if length(iosize) == 3
-                f = Array{Array{flddata.vals.precision,2},2}(undef,grid.nFaces,iosize[3])
-                exarray = MeshArray(grid,f)
-            else
-                exarray = flddata.tileinfo["XC"]
-            end
-            res = read(readbin(flddata.vals,tidx),exarray)
-        else
-            if isa(flddata.vals,MeshArray) || isa(flddata.vals,MeshArrays.gcmfaces)
-                res = flddata.vals
-            else
-                res = flddata.vals[tidx]
-            end
-        end
-    end
-    return res
-end
-
 
 """
     addDim(ds::NCDatasets.Dataset,dimvar::NCvar) # NCDatasets
@@ -445,21 +224,6 @@ function addVar(field::NCvar)
 end
 
 """
-    checkdims(v0::Array,var::NCvar)
-
-Helper function: Checks that the size of the data about to be written to the file
-matches the provided dimensions. Not exported.
-"""
-function checkdims(v0::Array,var::NCvar)
-    dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
-    if length(size(v0)) != length(dimlist)
-        dimlist = join(dimlist,", ")
-        error("Size of $(var.name) $(size(v0)) does not match its dimension list: ($dimlist)")
-    end
-
-end
-
-"""
     addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar},var::NCvar)
 
 Fill variable with data in netcdf file using either `NCDatasets.jl`
@@ -506,14 +270,14 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 end
             end
         end
-        
+
         for i = startidx:nsteps
             if isBinData || isNCData || isTileData
                 v0 = readdata(var.values,i)
             else
                 v0 = var.values[i]
             end
-            
+
             if ~isnothing(land_mask)
                 if length(size(v0)) == 1 && length(size(land_mask)) == 2
                     v0 = v0 .* land_mask[:,1]
@@ -577,7 +341,7 @@ function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
     else
         v0 = readdata(var.values,timeidx)
     end
-    
+
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
     checkdims(v0,var::NCvar)
     numdims = ndims(v0)
@@ -591,7 +355,6 @@ function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
 
 end
 
-
 """
     addDimData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar)
 
@@ -603,7 +366,7 @@ function addDimData(ds,dimvar::NCvar)
 end
 
 """
-    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README; 
+    createfile(filename, field::Union{NCvar,Dict{String,NCvar}}, README;
                 fillval=NaN, missval=NaN, itile=1, ntile=1)
 
 Create NetCDF file and add variable + dimension definitions
@@ -611,7 +374,7 @@ using either `NCDatasets.jl` or `NetCDF.jl`
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
                     fillval=NaN, missval=NaN, itile=1, ntile=1)
-    
+
     if isa(field,Dict)
 
         dims = unique(vcat([field[v].dims for v in keys(field)]...))
@@ -683,185 +446,5 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
         #nccreate(filename,)
         return NetCDF.create(filename,fieldvar, gatts = file_atts),fieldvar,dimlist
     end
-
-end
-
-"""
-    readncfile(fname,backend::Module=NCDatasets)
-
-Read in a NetCDF file and return variables/dimensions as `NCvar` structs, and
-    file attributes as `Dict`. Large variables/dimensions are not loaded into
-    memory. This can use either `NCDatasets.jl` or `NetCDF.jl`
-"""
-function readncfile(fname,backend::Module=NCDatasets)
-
-    ds = Dataset(fname)
-
-    dims = Dict{AbstractString,NCvar}()
-    vars = Dict{AbstractString,NCvar}()
-
-    for k in keys(ds)
-        if ~haskey(dims,k)
-            k_units = get(ds[k].attrib,"units","")
-            k_atts = Dict(ds[k].attrib)
-            if length(dimnames(ds[k])) == 1 && k == dimnames(ds[k])[1] # this variable is also a dimension
-                k_dims = length(ds[k])
-                if length(size(ds[k])) == 1
-                    k_values = ds[k][:]
-                elseif length(size(ds[k])) == 2
-                    k_values = ds[k][:,:]
-                else
-                    k_values = NCData(fname,k,backend,typeof(ds[k].var[:][1])) # Pointer to this variable in the file
-                end
-                if !isa(k_values,NCData) && !any(isa.(k_values,Ref(Missing)))
-                    k_values = typeof(k_values[1]).(k_values)
-                end
-                dims[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
-            else # Not a dimension
-                k_dims = Array{NCvar,1}()
-                for d in dimnames(ds[k])
-                    #global k_dims,dims
-                    if !haskey(dims,d) # Add the dimension
-                        d_units = get(ds[d].attrib,"units","")
-                        d_dims = length(ds[d])
-                        d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
-                        d_atts = Dict(ds[d].attrib)
-                        dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
-                    end
-                    k_dims = cat(k_dims,dims[d],dims=1)
-                end
-                hasTimeDim = hastimedim(k_dims)
-                if  ~hasTimeDim && length(k_dims) == 1# extra variable, not main field, just load the data now
-                    k_values = ds[k][:]
-                elseif ~hasTimeDim && length(k_dims) == 2
-                    k_values = ds[k][:,:]
-                elseif ~hasTimeDim && length(k_dims) == 3
-                    k_values = ds[k][:,:,:]
-                elseif hasTimeDim
-                    k_values = NCData(fname,k,backend,eltype(ds[k].var[:])) # Pointer to this variable in the file
-                end
-
-                if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
-                    k_values = typeof(k_values[1]).(k_values)
-                end
-
-                vars[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
-            end
-        end
-    end
-
-    atts = ["_FillValue","missing_value","itile","ntile"]
-    fileatts = Dict()
-    for a in atts
-        if haskey(ds.attrib,a)
-            fileatts[a] = ds.attrib[a]
-        end
-    end
-    close(ds)
-    return vars,dims,fileatts
-end
-
-"""
-    istimedim(d::NCvar)
-
-Helper function: determines whether d is a time dimension. Not exported.
-"""
-function istimedim(d::NCvar)
-
-    timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
-    return any(occursin.(timeUnits,Ref(lowercase(d.units))))
-
-end
-
-"""
-    findtimedim(v::NCvar)
-
-Helper function: finds which dimension is a time dimension, if any. Not exported.
-"""
-function findtimedim(v::NCvar)
-    return findall(istimedim.(v.dims))[1]
-end
-
-"""
-    hastimedim(v::NCvar)
-
-Helper function: determines whether a variable has a time dimension. Not exported.
-"""
-function hastimedim(v::NCvar)
-    ncvardim = isa.(v.dims,NCvar)
-    return any(ncvardim) && any(istimedim.(v.dims[ncvardim]))
-end
-
-"""
-    hastimedimdims::Array{NCvar})
-
-Helper function: determines whether an array of dimensions has a time dimension. Not
-    exported.
-"""
-function hastimedim(dims::Array{NCvar})
-    return any(istimedim.(dims))
-end
-
-"""
-    parsemeta(metafile)
-
-Parse out an `MITgcm` metadata file and return a `Dict` of fields in the file.
-"""
-function parsemeta(metafile)
-
-    meta = read(metafile,String)
-    meta = split(meta,";\n")
-    meta = meta[isempty.(meta).==false]
-    meta = replace.(meta,Ref(",\n"=>";"))
-    meta = replace.(meta,Ref("\n"=>""))
-    meta = replace.(meta,Ref("}"=>"]"))
-    meta = replace.(meta,Ref("{"=>"["))
-    #meta = replace.(meta,Ref(" "=>""))
-    meta = replace.(meta,Ref("'"=>"\""))
-    meta = replace.(meta,Ref(";]"=>"]"))
-    meta = replace.(meta,Ref(","=>" "))
-
-    meta = split.(meta,"=")
-    meta = [[replace(x[1]," "=>"") x[2]] for x in meta]
-
-    metaDict = Dict{String,Any}(m[1] => m[2] for m in meta)
-
-    for k in keys(metaDict)
-        val = eval(Meta.parse(metaDict[k]))
-        if isa(val[1],String)
-            val = replace.(val,Ref(" "=>""))
-        end
-        if length(val) == 1
-            val = val[1]
-        end
-        metaDict[k] = val
-    end
-    metaDict["dataprec"] = titlecase(metaDict["dataprec"])
-    return metaDict
-
-end
-
-"""
-    readAvailDiagnosticsLog(fname,fldname)
-
-Get the information for a particular field from the `available_diagnostics.log`
-    file (`MITgcm` output).
-"""
-function readAvailDiagnosticsLog(fname,fldname)
-    availdiags = readlines(fname)
-    line = availdiags[findall(occursin.(@sprintf("%-8s",fldname),availdiags))[1]]
-
-    line = split(line,'|')
-    line = lstrip.(rstrip.(line))
-
-    diagInfo = Dict([
-    "diagNum" => parse(Int,line[1]),
-    "fldname" => line[2],
-    "levs" => parse(Int,line[3]),
-    "mate" => line[4],
-    "code" => line[5],
-    "units" => line[6],
-    "title" => line[7]
-    ])
 
 end
