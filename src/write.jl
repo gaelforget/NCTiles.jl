@@ -22,7 +22,7 @@ end
     replacevalues(vals,ncvar::NCvar)
 
 Helper function: Replaces the "values" attribute of an ncvar without changing
-anything else. Used to apply land mask. Not exported.
+anything else. Used to apply land mask.
 """
 replacevalues(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,ncvar.atts,ncvar.backend)
 
@@ -103,12 +103,11 @@ TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize
     replacevalues(vals,td::TileData)
 
 Helper function: Replaces the "values" attribute of a TilData struct without changing
-anything else. Used to apply land mask. Not exported.
+anything else. Used to apply land mask.
 """
 replacevalues(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
 
-#Commented since "WARNING: import of Base.getindex into NCTiles conflicts with an existing identifier; ignored."
-#import Base: getindex
+import Base: getindex
 
 """
     getindex(v::NCvar,i::Integer)
@@ -219,8 +218,7 @@ function addVar(field::NCvar)
         attributes = field.atts
     end
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts))#,
-        #t = field.values.precision)
+        atts = merge(Dict(("units" =>field.units)),field.atts))
 end
 
 """
@@ -322,7 +320,7 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
     else
         print("Unrecognized values")
     end
-
+    return nothing
 end
 
 
@@ -373,7 +371,7 @@ Create NetCDF file and add variable + dimension definitions
 using either `NCDatasets.jl` or `NetCDF.jl`
 """
 function createfile(filename, field::Union{NCvar,Dict}, README;
-                    fillval=NaN, missval=NaN, itile=1, ntile=1)
+                    fillval=NaN, missval=NaN, itile=1, ntile=1, attribs=nothing)
 
     if isa(field,Dict)
 
@@ -393,20 +391,58 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     end
 
     if isa(fieldnames,Array)
-        fieldnamestring = join(fieldnames,",")
+        fieldnamestring = join(filter(x -> x !== "climatology_bounds", fieldnames),",")
     else
         fieldnamestring = fieldnames
     end
 
+    if ~isempty(README) && ~occursin(fieldnamestring*" -- ",README[1])
+        README[1] = fieldnamestring*" -- "*README[1]
+    end
+ 
+    if ~isnothing(attribs)
+        fillval = pop!(attribs,"_FillValue",NaN)
+        missingval = pop!(attribs,"missing_value",NaN)
+        itile = pop!(attribs,"itile",1)
+        ntile = pop!(attribs,"ntile",1)
+        description = [pop!(attribs,k,"") for k in ["description","A","B","C","D","E","F","G","H","I","J"]]
+        description = description[.~isempty.(description)]
+        if isempty(README)
+            README = description
+        elseif !(description == README)
+            README = vcat(README,description)
+        end
+        pop!(attribs,"date",nothing)
+        if isempty(attribs); attribs=nothing; end
+    end
+
+    if ~isempty(README)
+        if isa(README,Array) && length(README) > 1
+            description = vcat("description" => README[1],
+            [string(Char(65+(i-2))) => README[i] for i in 2:length(README)])
+        else
+            description = ["description" => isa(README,Array) ? README[1] : README]
+        end
+    else
+        description = ""
+    end
+
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
-    "Conventions" => "CF-1.6",
-    "description" => fieldnamestring*" -- "*README[1]],
-    [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
+    "Conventions" => "CF-1.6"])
+
+    if ~isempty(description)
+        file_atts = vcat(file_atts,description)
+    end
+    file_atts = vcat(file_atts,
     [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
     "_FillValue" => fillval,
     "missing_value" => missval,
     "itile" => itile,
     "ntile" => ntile])
+
+    if ~isnothing(attribs)
+        file_atts = vcat(file_atts,[k => attribs[k] for k in keys(attribs)])
+    end
 
     if backend == NCDatasets
         ds =  Dataset(filename,"c",attrib=file_atts)

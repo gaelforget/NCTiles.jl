@@ -1,4 +1,4 @@
-using MeshArrays, NCDatasets, NCTiles
+using MeshArrays, NCDatasets, NCTiles, MITgcmTools
 grid = GridSpec("LatLonCap","grids/GRID_LLC90/")
 
 exampledir = joinpath("data","ex4")
@@ -34,7 +34,7 @@ for f in land.fIndex
     end
 end
 
-tilarea = TileData(gridvars["RAC"],tilesize,grid)
+tilarea = TileData(gridvars["RAC"],tilesize,grid) # shouldn't need to pass in grid when passing in MeshArray object, can get it from MeshArray object
 tilland = TileData(land,tilesize,grid)
 thic = gridvars["DRC"]
 

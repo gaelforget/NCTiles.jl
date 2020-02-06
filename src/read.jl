@@ -43,7 +43,7 @@ readbin(flddata::BinData,tidx=1) = readbin(flddata.fnames[tidx],flddata.precisio
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
 Read netcdf file as specified in `NCData` argument. Optional
-argument `i` can be used to read a specific records / times. Not exported.
+argument `i` can be used to read a specific records / times.
 """
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
@@ -67,7 +67,7 @@ end
 """
     readdata(flddata,tidx=1)
 
-Generic wrapper function to read data from a file regardless of file/data type. Not exported.
+Generic wrapper function to read data from a file regardless of file/data type.
 """
 function readdata(flddata,tidx=1)
     if isa(flddata,BinData)
@@ -131,12 +131,17 @@ function readncfile(fname,backend::Module=NCDatasets)
                 k_dims = Array{NCvar,1}()
                 for d in dimnames(ds[k])
                     #global k_dims,dims
-                    if !haskey(dims,d) # Add the dimension
-                        d_units = get(ds[d].attrib,"units","")
-                        d_dims = length(ds[d])
-                        d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
-                        d_atts = Dict(ds[d].attrib)
-                        dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
+                    if !haskey(dims,d) 
+                        if haskey(ds,d) # Add the dimension
+                            d_units = get(ds[d].attrib,"units","")
+                            d_dims = length(ds[d])
+                            d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
+                            d_atts = Dict(ds[d].attrib)
+                            dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
+                        else
+                            dims[d] = NCvar(d,"",ds.dim[d],[],Dict(),backend)
+                        end
+
                     end
                     k_dims = cat(k_dims,dims[d],dims=1)
                 end
