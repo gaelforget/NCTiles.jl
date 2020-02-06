@@ -43,7 +43,7 @@ readbin(flddata::BinData,tidx=1) = readbin(flddata.fnames[tidx],flddata.precisio
     readncdata(var::NCData,i::Union{Colon,Integer}=:)
 
 Read netcdf file as specified in `NCData` argument. Optional
-argument `i` can be used to read a specific records / times. Not exported.
+argument `i` can be used to read a specific records / times.
 """
 function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     ds = Dataset(var.fname)
@@ -67,7 +67,7 @@ end
 """
     readdata(flddata,tidx=1)
 
-Generic wrapper function to read data from a file regardless of file/data type. Not exported.
+Generic wrapper function to read data from a file regardless of file/data type.
 """
 function readdata(flddata,tidx=1)
     if isa(flddata,BinData)

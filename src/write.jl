@@ -22,7 +22,7 @@ end
     replacevalues(vals,ncvar::NCvar)
 
 Helper function: Replaces the "values" attribute of an ncvar without changing
-anything else. Used to apply land mask. Not exported.
+anything else. Used to apply land mask.
 """
 replacevalues(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,ncvar.atts,ncvar.backend)
 
@@ -103,12 +103,11 @@ TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize
     replacevalues(vals,td::TileData)
 
 Helper function: Replaces the "values" attribute of a TilData struct without changing
-anything else. Used to apply land mask. Not exported.
+anything else. Used to apply land mask.
 """
 replacevalues(vals,td::TileData) = TileData(vals,td.tileinfo,td.tilesize,td.precision,td.numtiles)
 
-#Commented since "WARNING: import of Base.getindex into NCTiles conflicts with an existing identifier; ignored."
-#import Base: getindex
+import Base: getindex
 
 """
     getindex(v::NCvar,i::Integer)
@@ -219,8 +218,7 @@ function addVar(field::NCvar)
         attributes = field.atts
     end
     fieldvar = NcVar(field.name,dimlist,
-        atts = merge(Dict(("units" =>field.units)),field.atts))#,
-        #t = field.values.precision)
+        atts = merge(Dict(("units" =>field.units)),field.atts))
 end
 
 """
@@ -420,8 +418,8 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
 
     if ~isempty(README)
         if isa(README,Array) && length(README) > 1
-            description = ["description" => README[1],
-            [string(Char(65+(i-2))) => README[i] for i in 2:length(README)]]
+            description = vcat("description" => README[1],
+            [string(Char(65+(i-2))) => README[i] for i in 2:length(README)])
         else
             description = ["description" => isa(README,Array) ? README[1] : README]
         end
@@ -430,7 +428,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     end
 
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
-    "Conventions" => "CF-1.6"])#haskey(attribs,"Conventions") ? pop!(attribs,"Conventions",nothing) : "CF-1.6"])
+    "Conventions" => "CF-1.6"])
 
     if ~isempty(description)
         file_atts = vcat(file_atts,description)

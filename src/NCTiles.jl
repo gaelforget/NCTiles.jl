@@ -3,7 +3,6 @@ module NCTiles
 using NCDatasets,NetCDF,Dates,MeshArrays,Printf
 #using MITgcmTools
 
-import Base: getindex
 
 include("write.jl")
 include("read.jl")

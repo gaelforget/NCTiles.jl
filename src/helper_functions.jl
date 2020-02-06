@@ -3,7 +3,7 @@
     getnsteps(d)
 
 Helper function: Determines number of time steps in data d. Input d can be
-BinData, NCData, TileData, or an Array. Not exported.
+BinData, NCData, TileData, or an Array.
 """
 function getnsteps(d)
     if isa(d,BinData)
@@ -36,7 +36,7 @@ end
     checkdims(v0::Array,var::NCvar)
 
 Helper function: Checks that the size of the data about to be written to the file
-matches the provided dimensions. Not exported.
+matches the provided dimensions.
 """
 function checkdims(v0::Array,var::NCvar)
     if isa(var.values,Array) && isa(var.values[1],Number)
@@ -54,7 +54,7 @@ end
 """
     istimedim(d::Union{NCvar,NCDatasets.CFVariable})
 
-Helper function: determines whether d is a time dimension. Not exported.
+Helper function: determines whether d is a time dimension.
 """
 function istimedim(d::Union{NCvar,NCDatasets.CFVariable})
     if isa(d,NCvar)
@@ -72,7 +72,7 @@ end
     findtimedim(v::Array)
 
 Helper function: finds which dimension is a time dimension, if any. Can be Array of
-    NCvars or NCDatasets.CFVariables. Not exported.
+    NCvars or NCDatasets.CFVariables.
 """
 function findtimedim(dims::Array)
     return findall(istimedim.(dims))[1]
@@ -85,7 +85,7 @@ findtimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) = findtimedim([ds[d
     hastimedim::Array)
 
 Helper function: determines whether an array of dimensions has a time dimension. Can 
-    be Array of NCvars or NCDatasets.CFVariables.Not exported.
+    be Array of NCvars or NCDatasets.CFVariables.
 """
 function hastimedim(dims::Array)
     return any(istimedim.(dims))
@@ -94,7 +94,7 @@ end
 """
     hastimedim(v::NCvar)
 
-Helper function: determines whether a variable has a time dimension. Not exported.
+Helper function: determines whether a variable has a time dimension.
 """
 function hastimedim(v::NCvar)
     ncvardim = isa.(v.dims,NCvar)
