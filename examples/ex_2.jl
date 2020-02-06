@@ -19,7 +19,7 @@ f_ntile = get(fileatts,"ntile",1)
 filename = joinpath(savedir,"THETA.0009.nc")
 
 # Create the NetCDF file and populate with dimension and field info
-ds,fieldvars,dimlist = createfile(filename,ncvars,README,fillval = f_fillval,missval=f_missval,ff=f_ff,ntile=f_ntile)
+ds,fieldvars,dimlist = createfile(filename,ncvars,README,fillval = f_fillval,missval=f_missval,itile=f_ff,ntile=f_ntile)
 
 # Add field and dimension data and close the file
 addData(ds["THETA"],ncvars["THETA"])
