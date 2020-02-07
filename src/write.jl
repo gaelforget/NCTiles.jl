@@ -18,6 +18,20 @@ function NCvar(name::String, units::String, dims::NCvar, values, atts::Union{Dic
     return NCvar(name, units, [dims], values, atts, backend)
 end
 
+function NCvar(C::ClimateGrid)
+    x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
+    timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
+    
+    
+    dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
+            NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
+            NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
+            ]
+    
+    return NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
+
+end
+
 """
     replacevalues(vals,ncvar::NCvar)
 
@@ -402,7 +416,7 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
     "Conventions" => "CF-1.6",
     "description" => fieldnamestring*" -- "*README[1]],
     [string(Char(65+(i-2))) => README[i] for i in 2:length(README)],
-    [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl",
+    [#string(Char(65+length(README)-1)) => "file created using NCTiles.jl", #include verison here
     "_FillValue" => fillval,
     "missing_value" => missval,
     "itile" => itile,
@@ -450,24 +464,10 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
 end
 
 
-function writeClimateGrid(C,savename,README="")
-
-    # dimension_dict is "lat" => latname; "lon" => lonname
-    # For now just doing regular square lat/lon grid
+function write(myfld::NCvar,savename;README="",globalattribs=Dict())
     
-    x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
-    timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
-    
-    
-    dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
-            NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
-            NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
-            ]
-    
-    myfld = NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
-    
-    
-    ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=C.globalattribs)
+    ## Here down to move to other branch- high level API for writing
+    ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
     
     # Add field and dimension data
     addData(fldvar,myfld)
