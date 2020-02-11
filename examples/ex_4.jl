@@ -1,5 +1,5 @@
 using MeshArrays, NCDatasets, NCTiles
-grid = GridSpec("LLC90","grids/")
+grid = GridSpec("LatLonCap","grids/GRID_LLC90/")
 
 exampledir = joinpath("data","ex4")
 datadir = joinpath(exampledir,"model_output")

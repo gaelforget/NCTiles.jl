@@ -47,3 +47,18 @@ function writeNetCDFtiles(flds::Dict,savenamebase::String,README::Array)
     return nothing
 
 end
+
+
+# will move to write.jl
+function write(myfld::NCvar,savename;README="",globalattribs=Dict())
+    
+    ## Here down to move to other branch- high level API for writing
+    ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
+    
+    # Add field and dimension data
+    addData(fldvar,myfld)
+    addDimData.(Ref(ds),myfld.dims)
+    
+    # Close the file
+    close(ds)
+end
