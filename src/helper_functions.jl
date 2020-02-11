@@ -102,3 +102,24 @@ function hastimedim(v::NCvar)
 end
 
 hastimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) = hastimedim([ds[d] for d in dimnames(v)])
+
+"""
+    getdims(myflds::Dict)
+
+Helper function: retrieves unique dimensions in dictionary of fields.
+"""
+function getdims(myflds::Dict)
+    dims = unique(vcat([myflds[v].dims for v in keys(myflds)]...))
+    dims = filter( d -> isa(d,NCvar),dims)
+end
+
+"""
+    hastiledata(myfld::NCvar)
+
+Helper function: returns whether given field or dict of fields has any tiled data.
+"""
+function hastiledata(myfld::NCvar)
+    return isa(myfld.values,TileData)
+end
+
+hastiledata(myflds::Dict) = any([hastiledata(myflds[f]) for f in keys(myflds)])

@@ -147,6 +147,8 @@ for group in groups
     println(filename)
     if isfile(filename); rm(filename); end
 
+    write(flds,filename;README=README)
+#=
     # Create the NetCDF file and populate with dimension and field info
     ds,fieldvars,dimlist = createfile(filename,flds,README)
 
@@ -157,7 +159,7 @@ for group in groups
 
     addDimData.(Ref(ds),dims)
     close(ds)
-
+=#
     createTimestep.(timesteps[timestepidx],timestepidx,Ref(group),Ref(flds),Ref(timestart),Ref(joinpath(groupsavedir,fnameprefix)),Ref(README),Ref(dimdict))
     #createTimestep.(dtsteps,didx,Ref(group),Ref(flds),Ref(timestart),Ref(ncdir*group*"/"*fnameprefix),Ref(README))
 

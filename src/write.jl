@@ -375,8 +375,9 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
 
     if isa(field,Dict)
 
-        dims = unique(vcat([field[v].dims for v in keys(field)]...))
-        dims = filter( d -> isa(d,NCvar),dims)
+        dims = getdims(field::Dict)
+        #dims = unique(vcat([field[v].dims for v in keys(field)]...))
+        #dims = filter( d -> isa(d,NCvar),dims)
         field = collect(values(field))
 
         fieldnames = getfield.(field[findall(hastimedim.(field))],:name)
@@ -483,4 +484,78 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
         return NetCDF.create(filename,fieldvar, gatts = file_atts),fieldvar,dimlist
     end
 
+end
+
+# will move to write.jl
+function write(myfld::NCvar,savename;README="",globalattribs=Dict())
+    if hastiledata(myfld)
+
+
+
+    else
+        ## Here down to move to other branch- high level API for writing
+        ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
+        
+        # Add field and dimension data
+        addData(fldvar,myfld)
+        addDimData.(Ref(ds),myfld.dims)
+        
+        # Close the file
+        close(ds)
+    end
+end
+
+function write(myflds::Dict,savename;README="",globalattribs=Dict())
+
+    if hastiledata(myflds)
+        fldnames = collect(keys(myflds))
+        tilefld = myflds[fldnames[hastiledata(myflds[f]) for f in keys(myflds)]]
+        #tilefld = myflds[fldnames[findfirst(isa.([myflds[f].values for f in fldnames],TileData))]]
+        numtiles = tilefld.values.numtiles
+    
+        landidx = findfirst(get.([myflds[f].atts for f in fldnames],"standard_name","none").=="land_binary_mask")
+        if ~isnothing(landidx); land_mask = myflds[fldnames[landidx]].values; else land_mask = nothing; end
+        if isa(land_mask,TileData); land_mask = land_mask.vals; end
+        savenames = savename*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
+    
+        datasets = [createfile(savenames[tidx],myflds,README, itile = tidx, ntile = length(savenames), attribs = globalattribs) for tidx in 1:length(savenames)]
+    
+        ds = [x[1] for x in datasets]
+        fldvars = [x[2] for x in datasets]
+    
+        for k in keys(myflds)
+            if isa(myflds[k].values,TileData)
+                addData(fldvars,myflds[k],land_mask = land_mask)
+            else
+                tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
+                addData.(tmpfldvars,Ref(myflds[k]))
+            end
+        end
+    
+        dims = unique(vcat([myflds[v].dims for v in keys(myflds)]...))
+        dims = filter( d -> isa(d,NCvar),dims)
+    
+        for dim in dims
+            addDimData.(ds,Ref(dim))
+        end
+    
+        close.(ds)
+
+    else
+        dims = getdims(myflds)
+
+        ## Here down to move to other branch- high level API for writing
+        ds,fldvar,dimlist = createfile(savename,myflds,README,attribs=globalattribs)
+        
+        # Add field data
+        for k in keys(myflds)
+            addData(ds[k],myflds[k])
+        end
+
+        # Add dimension data
+        addDimData.(Ref(ds),dims)
+        
+        # Close the file
+        close(ds)
+    end
 end

@@ -57,7 +57,16 @@ for fidx in fldidx
         ])
         savepath = joinpath(saveloc,fldname)
         if !isdir(savepath); mkpath(savepath); end
+        
+        savenamebase = joinpath(savepath,fldname)
 
+        numtiles = flds[fldname].values.numtiles
+        savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
+        rm.(savenames, force=true)
+
+        writeNetCDFtiles(flds,savenamebase,README,attribs)
+
+        #=
         numtiles = flds[fldname].values.numtiles
         savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
         rm.(savenames, force=true)
@@ -82,5 +91,6 @@ for fidx in fldidx
         end
 
         close.(ds)
+        =#
     end
 end
