@@ -1,4 +1,4 @@
-using NCTiles,NCDatasets,NetCDF,Dates,Printf
+using NCTiles,NCDatasets,NetCDF,Dates,Printf,MITgcmTools
 
 examplesdir = joinpath("data","ex3")
 indir = joinpath(examplesdir,"data","cs510","diags_interp")
