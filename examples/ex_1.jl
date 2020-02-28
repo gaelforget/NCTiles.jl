@@ -35,7 +35,7 @@ field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname)
 
 write(field,joinpath(savedir,"ex1_NCDatasets.nc"),README=README)
 
-#=
+#= Line above is shorthand for:
 # Create the NetCDF file and populate with dimension and field info
 ds,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NCDatasets.nc"),field,README)
 

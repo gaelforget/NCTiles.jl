@@ -64,9 +64,9 @@ for fidx in fldidx
         savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
         rm.(savenames, force=true)
 
-        writeNetCDFtiles(flds,savenamebase,README,attribs)
+        write(flds,savenamebase,README=README)
 
-        #=
+        #= Line above is shorthand for:
         numtiles = flds[fldname].values.numtiles
         savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
         rm.(savenames, force=true)

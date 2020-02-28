@@ -486,14 +486,29 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
 
 end
 
-# will move to write.jl
-function write(myfld::NCvar,savename;README="",globalattribs=Dict())
-    if hastiledata(myfld)
+import Base: write
 
+function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
+    if hastiledata(myfld) # Create one file for each tile
+        
+        numtiles = myfld.values.numtiles
+        savenames = savename*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
+    
+        datasets = [createfile(savenames[tidx],myfld,README, itile = tidx, ntile = length(savenames), attribs = globalattribs) for tidx in 1:length(savenames)]
+    
+        ds = [x[1] for x in datasets]
+        fldvars = [x[2] for x in datasets]
 
+        addData(fldvars,myfld)
 
-    else
-        ## Here down to move to other branch- high level API for writing
+        dims = myfld.dims
+    
+        for dim in dims
+            addDimData.(ds,Ref(dim))
+        end
+    
+        close.(ds)
+    else # Create one file
         ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
         
         # Add field and dimension data
@@ -505,12 +520,11 @@ function write(myfld::NCvar,savename;README="",globalattribs=Dict())
     end
 end
 
-function write(myflds::Dict,savename;README="",globalattribs=Dict())
+function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
 
     if hastiledata(myflds)
         fldnames = collect(keys(myflds))
-        tilefld = myflds[fldnames[hastiledata(myflds[f]) for f in keys(myflds)]]
-        #tilefld = myflds[fldnames[findfirst(isa.([myflds[f].values for f in fldnames],TileData))]]
+        tilefld = myflds[fldnames[findfirst([hastiledata(myflds[f]) for f in fldnames])]]
         numtiles = tilefld.values.numtiles
     
         landidx = findfirst(get.([myflds[f].atts for f in fldnames],"standard_name","none").=="land_binary_mask")
