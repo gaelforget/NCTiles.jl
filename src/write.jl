@@ -488,6 +488,11 @@ end
 
 import Base: write
 
+"""
+    write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
+
+Creates NetCDF file and writes myfld and all its dimensions to the file.
+"""
 function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
     if hastiledata(myfld) # Create one file for each tile
         
@@ -520,6 +525,11 @@ function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
     end
 end
 
+"""
+    write(myflds::Dict,savename::String;README="",globalattribs=Dict())
+
+Creates NetCDF file and writes myflds and all their dimensions to the file.
+"""
 function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
 
     if hastiledata(myflds)
