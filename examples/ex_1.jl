@@ -33,6 +33,9 @@ dims = [NCvar("lon_c","degrees_east",size(lon),lon,Dict("long_name" => "longitud
 fielddata = BinData(fnames,prec,(n1,n2))
 field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname),NCDatasets)
 
+write(field,joinpath(savedir,"ex1_NCDatasets.nc"),README=README)
+
+#= Line above is shorthand for:
 # Create the NetCDF file and populate with dimension and field info
 ds,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NCDatasets.nc"),field,README)
 
@@ -42,6 +45,7 @@ addDimData.(Ref(ds),field.dims)
 
 # Close the file
 close(ds)
+=#
 
 # Using NetCDF
 

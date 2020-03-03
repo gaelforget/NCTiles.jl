@@ -18,6 +18,9 @@ f_ntile = get(fileatts,"ntile",1)
 
 filename = joinpath(savedir,"THETA.0009.nc")
 
+write(ncvars,joinpath(savedir,"ex2.nc"),README=README,globalattribs=fileatts)
+
+#= Line above is shorthand for:
 # Create the NetCDF file and populate with dimension and field info
 ds,fieldvars,dimlist = createfile(filename,ncvars,README,fillval = f_fillval,missval=f_missval,itile=f_ff,ntile=f_ntile)
 
@@ -25,3 +28,4 @@ ds,fieldvars,dimlist = createfile(filename,ncvars,README,fillval = f_fillval,mis
 addData(ds["THETA"],ncvars["THETA"])
 addDimData.(Ref(ds),collect(values(ncdims)))
 close(ds)
+=#
