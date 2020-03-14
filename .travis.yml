@@ -1,5 +1,4 @@
 language: julia
-install: travis_wait mvn install
 
 os:
   - osx
@@ -19,9 +18,9 @@ julia:
 notifications:
   email: false
 
-#script: # the default script is equivalent to the following
-#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-#  - julia --project -e 'using Pkg; Pkg.build(); Pkg.test(; coverage=true)';
+script: # the default script is equivalent to the following
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+  - travis_wait julia --project -e 'using Pkg; Pkg.build(); Pkg.test(; coverage=true)';
 
 after_success:
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
