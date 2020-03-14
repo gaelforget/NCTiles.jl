@@ -370,7 +370,7 @@ end
 Create NetCDF file and add variable + dimension definitions
 using either `NCDatasets.jl` or `NetCDF.jl`
 """
-function createfile(filename, field::Union{NCvar,Dict}, README;
+function createfile(filename, field::Union{NCvar,Dict}, rdm="";
                     fillval=NaN, missval=NaN, itile=1, ntile=1, attribs=nothing)
 
     if isa(field,Dict)
@@ -397,10 +397,11 @@ function createfile(filename, field::Union{NCvar,Dict}, README;
         fieldnamestring = fieldnames
     end
 
+    README=deepcopy(rdm)
     if ~isempty(README) && ~occursin(fieldnamestring*" -- ",README[1])
         README[1] = fieldnamestring*" -- "*README[1]
     end
- 
+
     if ~isnothing(attribs)
         fillval = pop!(attribs,"_FillValue",NaN)
         missingval = pop!(attribs,"missing_value",NaN)
@@ -495,31 +496,31 @@ Creates NetCDF file and writes myfld and all its dimensions to the file.
 """
 function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
     if hastiledata(myfld) # Create one file for each tile
-        
+
         numtiles = myfld.values.numtiles
         savenames = savename*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
-    
+
         datasets = [createfile(savenames[tidx],myfld,README, itile = tidx, ntile = length(savenames), attribs = globalattribs) for tidx in 1:length(savenames)]
-    
+
         ds = [x[1] for x in datasets]
         fldvars = [x[2] for x in datasets]
 
         addData(fldvars,myfld)
 
         dims = myfld.dims
-    
+
         for dim in dims
             addDimData.(ds,Ref(dim))
         end
-    
+
         close.(ds)
     else # Create one file
         ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
-        
+
         # Add field and dimension data
         addData(fldvar,myfld)
         addDimData.(Ref(ds),myfld.dims)
-        
+
         # Close the file
         close(ds)
     end
@@ -536,17 +537,17 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
         fldnames = collect(keys(myflds))
         tilefld = myflds[fldnames[findfirst([hastiledata(myflds[f]) for f in fldnames])]]
         numtiles = tilefld.values.numtiles
-    
+
         landidx = findfirst(get.([myflds[f].atts for f in fldnames],"standard_name","none").=="land_binary_mask")
         if ~isnothing(landidx); land_mask = myflds[fldnames[landidx]].values; else land_mask = nothing; end
         if isa(land_mask,TileData); land_mask = land_mask.vals; end
         savenames = savename*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
-    
+
         datasets = [createfile(savenames[tidx],myflds,README, itile = tidx, ntile = length(savenames), attribs = globalattribs) for tidx in 1:length(savenames)]
-    
+
         ds = [x[1] for x in datasets]
         fldvars = [x[2] for x in datasets]
-    
+
         for k in keys(myflds)
             if isa(myflds[k].values,TileData)
                 addData(fldvars,myflds[k],land_mask = land_mask)
@@ -555,14 +556,14 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
                 addData.(tmpfldvars,Ref(myflds[k]))
             end
         end
-    
+
         dims = unique(vcat([myflds[v].dims for v in keys(myflds)]...))
         dims = filter( d -> isa(d,NCvar),dims)
-    
+
         for dim in dims
             addDimData.(ds,Ref(dim))
         end
-    
+
         close.(ds)
 
     else
@@ -570,7 +571,7 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
 
         ## Here down to move to other branch- high level API for writing
         ds,fldvar,dimlist = createfile(savename,myflds,README,attribs=globalattribs)
-        
+
         # Add field data
         for k in keys(myflds)
             addData(ds[k],myflds[k])
@@ -578,7 +579,7 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
 
         # Add dimension data
         addDimData.(Ref(ds),dims)
-        
+
         # Close the file
         close(ds)
     end
