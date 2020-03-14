@@ -1,4 +1,5 @@
 language: julia
+install: travis_wait mvn install
 
 os:
   - osx
