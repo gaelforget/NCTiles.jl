@@ -1,8 +1,10 @@
 module NCTiles
 
-using NCDatasets,NetCDF,Dates,MeshArrays,Printf
+using NCDatasets,NetCDF,MeshArrays
+using Dates,Printf,Pkg
 #using MITgcmTools
 
+version()=Pkg.TOML.parsefile(joinpath(dirname(pathof(NCTiles)), "..", "Project.toml"))["version"]
 
 include("write.jl")
 include("read.jl")

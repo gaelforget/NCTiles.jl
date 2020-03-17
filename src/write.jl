@@ -430,7 +430,7 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
     end
 
     file_atts = vcat(["date" => Dates.format(today(),"dd-u-yyyy"),
-    "Conventions" => "CF-1.6"])
+    "Conventions" => "CF-1.6"], "NCTiles" => NCTiles.version())
 
     if ~isempty(description)
         file_atts = vcat(file_atts,description)
