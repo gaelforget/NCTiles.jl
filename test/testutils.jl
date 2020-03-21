@@ -1,53 +1,6 @@
 using NCTiles, NCDatasets, MeshArrays, Dates
 
 """
-    writetestfile(fname,field,package)
-
-Has been replaced by `write()` now in the pkg...
-"""
-function writetestfile(fname,field,package)
-
-    if isfile(fname)
-        rm(fname)
-    end
-
-    README = ["This file is written as a test for NCTiles.jl."]
-    if isa(field,Dict) # TileData Example
-        savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:field["data2d"].values.numtiles),4,"0").*".nc")
-        dims = unique(vcat([field[v].dims for v in keys(field)]...))
-        datasets = [createfile(savenames[tidx],field,README,ntile = length(savenames), itile = tidx) for tidx in 1:length(savenames)]
-
-        ds = [x[1] for x in datasets]
-        fldvars = [x[2] for x in datasets]
-        #dims = [x[3] for x in datasets]
-
-        for k in keys(field)
-            if isa(field[k].values,TileData)
-                addData(fldvars,field[k])
-            else
-                tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
-                addData.(tmpfldvars,Ref(field[k]))
-            end
-        end
-
-        for dim in dims
-            addDimData.(ds,Ref(dim))
-        end
-        close.(ds)
-
-    else
-        ds,fldvar,dimlist = createfile(fname,field,README)
-
-        addData(fldvar,field)
-        if package == NCDatasets
-            addDimData.(Ref(ds),field.dims)
-        end
-        # Close the file
-        close(ds)
-    end
-end
-
-"""
     testfile(fname,checkfld)
 
 Perform various checks on a netcdf file (fname) variable (checkfld).
