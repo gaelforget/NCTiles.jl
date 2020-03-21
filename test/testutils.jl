@@ -1,5 +1,10 @@
 using NCTiles, NCDatasets, MeshArrays, Dates
 
+"""
+    writetestfile(fname,field,package)
+
+Has been replaced by `write()` now in the pkg...
+"""
 function writetestfile(fname,field,package)
 
     if isfile(fname)
@@ -42,10 +47,18 @@ function writetestfile(fname,field,package)
     end
 end
 
+"""
+    testfile(fname,checkfld)
+
+Perform various checks on a netcdf file (fname) variable (checkfld).
+"""
 function testfile(fname,checkfld)
     pass = true
     ds = Dataset(fname)
+    dsvar = ds[checkfld.name]
     varcheck = Dict()
+
+    #1. checks on dimensions
     varcheck["dims"] = Dict()
     for d in checkfld.dims
         fildim = ds[d.name]
@@ -76,8 +89,7 @@ function testfile(fname,checkfld)
         varcheck["dims"][d.name] = dimcheck
     end
 
-    dsvar = ds[checkfld.name]
-
+    #2. checks on units
     for k in keys(dsvar.attrib)
         if k == "units"
             varcheck["units"] = dsvar.attrib[k] == checkfld.units
@@ -88,7 +100,7 @@ function testfile(fname,checkfld)
         end
     end
 
-    # Check values of test data
+    #3. checks on values
     varcheck["values"] = false
     if isa(checkfld.values,Array)
         varcheck["values"] = true
@@ -166,6 +178,7 @@ function testfile(fname,checkfld)
     end
     pass = pass && varcheck["values"]
 
+    #4. printout message if >0 test failed
     if ~pass
         missmatchstring = ""
         for k in keys(varcheck)
@@ -188,6 +201,11 @@ function testfile(fname,checkfld)
     return pass
 end
 
+"""
+    applylandmask(data,land)
+
+Apply land mask either lazily (NCvar) or eagerly (other input types).
+"""
 function applylandmask(data,land)
     if isa(data,NCvar)
         if length(data.dims) == 2
@@ -209,6 +227,11 @@ function applylandmask(data,land)
     return dataout
 end
 
+"""
+    maketestdata()
+
+Create test data on a simple, coarse-grained Earth grid.
+"""
 function maketestdata()
     lon=-180:20:180; lat=-90:20:90;
     depth = 5:10:100
@@ -269,6 +292,11 @@ function maketestdata()
 
 end
 
+"""
+    getgrid()
+
+Download (if not already done) real ocean model grid (GRID_CS32) for testing pkg.
+"""
 function getgrid()
 
     testdir = abspath(joinpath(dirname(pathof(NCTiles)),"..","test"))

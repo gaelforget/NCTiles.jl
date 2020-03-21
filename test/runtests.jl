@@ -15,22 +15,11 @@ ncfilnc2d,tmp = mktemp()
 ncfilnc3d,tmp = mktemp()
 ncfiltile2d,tmp = mktemp()
 
-ncfilarray2d_hl,tmp = mktemp()
-ncfilarray3d_hl,tmp = mktemp()
-ncfilbin2d_hl,tmp = mktemp()
-ncfilbin3d_hl,tmp = mktemp()
-ncfilnc2d_hl,tmp = mktemp()
-ncfilnc3d_hl,tmp = mktemp()
-ncfiltile2d_hl,tmp = mktemp()
-
 tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
                     testvars["tile_ex"]["fnamestile2d"],
                     ncfilarray2d, ncfilarray3d,
                     ncfilbin2d, ncfilbin3d,
-                    ncfilnc2d, ncfilnc3d,
-                    ncfilarray2d_hl, ncfilarray3d_hl,
-                    ncfilbin2d_hl, ncfilbin3d_hl,
-                    ncfilnc2d_hl, ncfilnc3d_hl)
+                    ncfilnc2d, ncfilnc3d)
 
 @testset "NCtiles Tests" begin
 
@@ -102,19 +91,15 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
                     "land" => NCvar("land","1",dims[1:3],tilland,Dict(["long_name" => "land mask", "standard_name" => "land_binary_mask"]),NCDatasets),
                     "thic" => NCvar("thic","m",dims[3],thic,Dict("standard_name" => "cell_thickness"),NCDatasets)
         ])
-        writetestfile(ncfiltile2d,flds,NCDatasets)
-        write(flds, ncfiltile2d_hl)
+        write(flds, ncfiltile2d)
         savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:tilfld2d.numtiles),4,"0").*".nc")
-        savenames_hl = joinpath.(ncfiltile2d_hl*".".*lpad.(string.(1:tilfld2d.numtiles),4,"0").*".nc")
         for k in keys(flds)
             if k != "thic" && k != "land" && isa(flds[k].values,MeshArray)
                 applylandmask(flds[k],land)
             end
         end
         @test all([testfile(fname,flds[fld]) for fname in savenames for fld in keys(flds)])
-        #@test all([testfile(fname,flds[fld]) for fname in savenames_hl for fld in keys(flds)])
         rm.(savenames)
-        rm.(savenames_hl)
     end
 
 end
