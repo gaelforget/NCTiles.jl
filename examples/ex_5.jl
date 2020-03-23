@@ -1,6 +1,4 @@
-
-using ClimateTools,AxisArrays,NCDatasets,NCTiles
-#include("../src/highlevel.jl")
+using ClimateTools,NCDatasets,NCTiles
 # ClimateTools requires that lat,lon,time requires specific field names
 # latitude: lat, latitude, rlat, y, yc
 # longitude: lon, longitude, rlon, x, xc
@@ -48,4 +46,5 @@ write(writefld,savename)
 poly_reg = [[NaN -65 -80 -80 -65 -65];[NaN 42 42 52 52 42]]
 model = load(joinpath.(Ref(indir),gcmfiles), "tasmax", poly=poly_reg)
 writefld = climgridtoncvar(model)
-write(writefld,joinpath(savedir,"ex5_extraction.nc"))
+write(writefld,joinpath(savedir,"ex5_extraction.nc"),globalattribs=model.globalattribs)
+# Need to include global attributes
