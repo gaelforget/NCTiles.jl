@@ -421,8 +421,8 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
     if ~isnothing(attribs)
         fillval = pop!(attribs,"_FillValue",NaN)
         missingval = pop!(attribs,"missing_value",NaN)
-        itile = pop!(attribs,"itile",1)
-        ntile = pop!(attribs,"ntile",1)
+        haskey(attribs,"itile") ? itile = pop!(attribs,"itile") : nothing
+        haskey(attribs,"ntile") ? ntile = pop!(attribs,"ntile") : nothing
         description = [pop!(attribs,k,"") for k in ["description","A","B","C","D","E","F","G","H","I","J"]]
         description = description[.~isempty.(description)]
         if isempty(README)

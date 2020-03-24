@@ -1,51 +1,17 @@
 using NCTiles, NCDatasets, MeshArrays, Dates
 
-function writetestfile(fname,field,package)
+"""
+    testfile(fname,checkfld)
 
-    if isfile(fname)
-        rm(fname)
-    end
-
-    README = ["This file is written as a test for NCTiles.jl."]
-    if isa(field,Dict) # TileData Example
-        savenames = joinpath.(ncfiltile2d*".".*lpad.(string.(1:field["data2d"].values.numtiles),4,"0").*".nc")
-        dims = unique(vcat([field[v].dims for v in keys(field)]...))
-        datasets = [createfile(savenames[tidx],field,README,ntile = length(savenames), itile = tidx) for tidx in 1:length(savenames)]
-
-        ds = [x[1] for x in datasets]
-        fldvars = [x[2] for x in datasets]
-        #dims = [x[3] for x in datasets]
-
-        for k in keys(field)
-            if isa(field[k].values,TileData)
-                addData(fldvars,field[k])
-            else
-                tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
-                addData.(tmpfldvars,Ref(field[k]))
-            end
-        end
-
-        for dim in dims
-            addDimData.(ds,Ref(dim))
-        end
-        close.(ds)
-
-    else
-        ds,fldvar,dimlist = createfile(fname,field,README)
-
-        addData(fldvar,field)
-        if package == NCDatasets
-            addDimData.(Ref(ds),field.dims)
-        end
-        # Close the file
-        close(ds)
-    end
-end
-
+Perform various checks on a netcdf file (fname) variable (checkfld).
+"""
 function testfile(fname,checkfld)
     pass = true
     ds = Dataset(fname)
+    dsvar = ds[checkfld.name]
     varcheck = Dict()
+
+    #1. checks on dimensions
     varcheck["dims"] = Dict()
     for d in checkfld.dims
         fildim = ds[d.name]
@@ -76,8 +42,7 @@ function testfile(fname,checkfld)
         varcheck["dims"][d.name] = dimcheck
     end
 
-    dsvar = ds[checkfld.name]
-
+    #2. checks on units
     for k in keys(dsvar.attrib)
         if k == "units"
             varcheck["units"] = dsvar.attrib[k] == checkfld.units
@@ -88,7 +53,7 @@ function testfile(fname,checkfld)
         end
     end
 
-    # Check values of test data
+    #3. checks on values
     varcheck["values"] = false
     if isa(checkfld.values,Array)
         varcheck["values"] = true
@@ -166,6 +131,7 @@ function testfile(fname,checkfld)
     end
     pass = pass && varcheck["values"]
 
+    #4. printout message if >0 test failed
     if ~pass
         missmatchstring = ""
         for k in keys(varcheck)
@@ -188,6 +154,11 @@ function testfile(fname,checkfld)
     return pass
 end
 
+"""
+    applylandmask(data,land)
+
+Apply land mask either lazily (NCvar) or eagerly (other input types).
+"""
 function applylandmask(data,land)
     if isa(data,NCvar)
         if length(data.dims) == 2
@@ -209,6 +180,11 @@ function applylandmask(data,land)
     return dataout
 end
 
+"""
+    maketestdata()
+
+Create test data on a simple, coarse-grained Earth grid.
+"""
 function maketestdata()
     lon=-180:20:180; lat=-90:20:90;
     depth = 5:10:100
@@ -269,6 +245,11 @@ function maketestdata()
 
 end
 
+"""
+    getgrid()
+
+Download (if not already done) real ocean model grid (GRID_CS32) for testing pkg.
+"""
 function getgrid()
 
     testdir = abspath(joinpath(dirname(pathof(NCTiles)),"..","test"))
