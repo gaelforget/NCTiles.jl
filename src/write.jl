@@ -18,22 +18,6 @@ function NCvar(name::String, units::String, dims::NCvar, values, atts::Union{Dic
     return NCvar(name, units, [dims], values, atts, backend)
 end
 
-#=
-function NCvar(C::ClimateGrid)
-    x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
-    timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
-    
-    
-    dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
-            NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
-            NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
-            ]
-    
-    return NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
-
-end
-=#
-
 """
     replacevalues(vals,ncvar::NCvar)
 

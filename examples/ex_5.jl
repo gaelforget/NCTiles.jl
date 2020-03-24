@@ -9,11 +9,16 @@ indir = joinpath(examplesdir,"infiles")
 savedir = joinpath(examplesdir,"outfiles")
 if ~ispath(savedir); mkpath(savedir); end
 
-# First test one of our files
-fname = joinpath(indir,"Chl050.nc")
-README = readlines(joinpath(examplesdir,"README"))
-savename = joinpath(savedir,"ex5.nc")
+"""
+        climgridtoncvar(C::ClimGrid)
 
+Creates an NCvar struct from a ClimGrid object. NCvar struct can then be written
+to a NetCDF file using write().
+
+Ex: C = load(fname,fldname)
+writefld = climgridtoncvar(C)
+write(writefld,"myfile.nc")
+"""
 function climgridtoncvar(C::ClimGrid)
         x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
         timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
@@ -25,7 +30,12 @@ function climgridtoncvar(C::ClimGrid)
                 ]
         
         return NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
-end    
+end   
+
+# First test one of our files
+fname = joinpath(indir,"Chl050.nc")
+README = readlines(joinpath(examplesdir,"README"))
+savename = joinpath(savedir,"ex5.nc") 
 
 C = load(fname,fldname)
 writefld = climgridtoncvar(C)
@@ -47,4 +57,3 @@ poly_reg = [[NaN -65 -80 -80 -65 -65];[NaN 42 42 52 52 42]]
 model = load(joinpath.(Ref(indir),gcmfiles), "tasmax", poly=poly_reg)
 writefld = climgridtoncvar(model)
 write(writefld,joinpath(savedir,"ex5_extraction.nc"),globalattribs=model.globalattribs)
-# Need to include global attributes
