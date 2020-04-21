@@ -38,13 +38,16 @@ end
 Helper function: Checks that the size of the data about to be written to the file
 matches the provided dimensions.
 """
-function checkdims(v0::Array,var::NCvar)
+function checkdims(v0,var::NCvar)
+    # if v0 is a scalar, 0 dims
+    ~isa(v0,Array) ? ndimsv0 = 0 : ndimsv0 = length(size(v0))
+
     if isa(var.values,Array) && isa(var.values[1],Number)
         dimlist = getfield.(var.dims,:name)
     else
         dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
     end
-    if length(size(v0)) != length(dimlist)
+    if ndimsv0 != length(dimlist)
         dimlist = join(dimlist,", ")
         error("Size of $(var.name) $(size(v0)) does not match its dimension list: ($dimlist)")
     end
@@ -79,7 +82,11 @@ function findtimedim(dims::Array)
 end
 
 findtimedim(v::NCvar) = findtimedim(v.dims)
-findtimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) = findtimedim([ds[d] for d in dimnames(v)])
+
+function findtimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) 
+    idx = [haskey(ds,dim) for dim in dimnames(v)]  # tcb dim isn't always listed as a variable in NetCDF files
+    findall(idx)[findtimedim([ds[d] for d in dimnames(v)[idx]])]
+end
 
 """
     hastimedim::Array)
@@ -101,7 +108,10 @@ function hastimedim(v::NCvar)
     return any(ncvardim) && hastimedim(v.dims[ncvardim])
 end
 
-hastimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) = hastimedim([ds[d] for d in dimnames(v)])
+function hastimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) 
+    vardims = dimnames(v)[[haskey(ds,dim) for dim in dimnames(v)]] # tcb dim isn't always listed as a variable in NetCDF files
+    hastimedim([ds[d] for d in vardims])
+end
 
 """
     getdims(myflds::Dict)
