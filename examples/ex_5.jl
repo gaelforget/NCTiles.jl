@@ -1,84 +1,59 @@
-using NCTiles,NCDatasets
-
-# Climatology example: This example has two parts. First, we take a NetCDF file with climatology_bounds
-# and rewrite it as is (5a). Then we are write a new NetCDF file with updated dimensions (5b).
-# This example is based on the processing that had to be done to put this data into
-# LAS/OpenDap. In order to display LAS prefers the data have dimensions lon,lat(,dep),time and that each
-# of these be one dimensional (linear), whereas the data is originally formatted to have dimensions
-# i,j(,k),t with 2D latitude and longitude added as variables (curvelinear). Additionally, the attribute
-# "positive" needed to be added to the depth dimension. This is climatology data and includes
-# the climatology_bounds.
-
-# Point to NetCDF file
+using ClimateTools,NCDatasets,NCTiles
+# ClimateTools requires that lat,lon,time requires specific field names
+# latitude: lat, latitude, rlat, y, yc
+# longitude: lon, longitude, rlon, x, xc
+# time: time
 examplesdir = joinpath("data","ex5")
-indir = joinpath(examplesdir,"input")
-savedir = joinpath(examplesdir,"output")
+fldname = "Chl050"
+indir = joinpath(examplesdir,"infiles")
+savedir = joinpath(examplesdir,"outfiles")
 if ~ispath(savedir); mkpath(savedir); end
-fldname = "FeT"
-fname = joinpath(indir,fldname*".0001.nc")
-README = [fldname*" -- Source: Gael Forget; version: alpha."]
 
-# Read in current NetCDF File
-ncvars,ncdims,fileatts = readncfile(fname)
+"""
+        climgridtoncvar(C::ClimGrid)
 
-# Ex 5a: Rewrite as-is
-rm(joinpath(savedir,"ex5a.nc"),force=true)
-write(ncvars,joinpath(savedir,"ex5a.nc"),README=README)
+Creates an NCvar struct from a ClimGrid object. NCvar struct can then be written
+to a NetCDF file using write().
 
-# Ex 5b: Rewrite NetCDF file with updated dimensions
+Ex: C = load(fname,fldname)
+writefld = climgridtoncvar(C)
+write(writefld,"myfile.nc")
+"""
+function climgridtoncvar(C::ClimGrid)
+        x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
+        timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
+        
+        
+        dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
+                NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
+                NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
+                ]
+        
+        return NCvar(fldname,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
+end   
 
-# Reworking lat,lon,dep Dimensions
-dims = []
-dimdict = Dict(["i_" => "lon", "j_" => "lat", "k_" => "dep"])
-for d in ncvars[fldname].dims
-    global dims
-    if haskey(dimdict,d.name[1:end-1])
-        newdim = dimdict[d.name[1:end-1]]
-        newdimname = join([newdim, d.name[end]],"_")
-        attribs = filter(p -> p.first !== "units",ncvars[newdim].atts) # Remove units from attributes so it's in two places
-        if newdim == "dep" # Add "positive" => "down" to depth
-            attribs["positive"] = "down"
-            attribs["standard_name"] = "depth"
-        end
-        # Grab one-dimensional values for lat/lon
-        vals = newdim == "lat" ? ncvars[newdim].values[1,:] : ncvars[newdim].values[:,1]
+# First test one of our files
+fname = joinpath(indir,"Chl050.nc")
+README = readlines(joinpath(examplesdir,"README"))
+savename = joinpath(savedir,"ex5.nc") 
 
-        # Add updated dimension to dims array
-        dims = vcat(dims,NCvar(newdimname,
-                                ncvars[newdim].units,
-                                ncdims[d.name].dims,
-                                vals,
-                                attribs, 
-                                NCDatasets))
-        pop!(ncvars,newdim) #remove extra dimension variable
-    end
-end
+C = load(fname,fldname)
+writefld = climgridtoncvar(C)
+write(writefld,savename)
 
-# Reworking Time Dimension
-dims = vcat(dims,NCvar("tim",
-                        ncvars["tim"].units,
-                        ncdims["t"].dims,
-                        ncdims["t"].values,
-                        filter(p -> p.first !== "units",ncvars["tim"].atts),
-                        NCDatasets))
-pop!(ncvars,"tim")
+# Files from ClimateTools Example
+gcmfiles =["tasmax_day_MIROC5_historical_r1i1p1_19800101-19891231.nc",
+"tasmax_day_MIROC5_historical_r1i1p1_19900101-19991231.nc",
+"tasmax_day_MIROC5_historical_r1i1p1_20000101-20091231.nc"]
+fldname = "tasmax"
+savename = joinpath(savedir,gcmfiles[1])
+C = load(joinpath(indir,gcmfiles[1]),fldname)
+writefld = climgridtoncvar(C)
+write(writefld,savename)
 
-# Replacing dimensions in the NCvars
-ncvars[fldname] = NCvar(ncvars[fldname].name,
-                                ncvars[fldname].units,
-                                dims,
-                                ncvars[fldname].values,
-                                ncvars[fldname].atts,
-                                ncvars[fldname].backend)
-ncvars["climatology_bounds"] = NCvar(ncvars["climatology_bounds"].name,
-                                        ncvars["climatology_bounds"].units,
-                                        [ncdims["tcb"],dims[end]],
-                                        ncvars["climatology_bounds"].values,
-                                        ncvars["climatology_bounds"].atts,
-                                        ncvars["climatology_bounds"].backend)
-
-    
-# Write result to a new NetCDF file
-rm(joinpath(savedir,"ex5b.nc"),force=true)
-write(ncvars,joinpath(savedir,"ex5b.nc"),README=README)
-
+# Following ClimateTools Example
+# Extraction
+poly_reg = [[NaN -65 -80 -80 -65 -65];[NaN 42 42 52 52 42]]
+model = load(joinpath.(Ref(indir),gcmfiles), "tasmax", poly=poly_reg)
+writefld = climgridtoncvar(model)
+write(writefld,joinpath(savedir,"ex5_extraction.nc"),globalattribs=model.globalattribs)
