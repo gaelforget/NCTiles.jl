@@ -35,7 +35,7 @@ for d in ncvars[fldname].dims
     if haskey(dimdict,d.name[1:end-1])
         newdim = dimdict[d.name[1:end-1]]
         newdimname = join([newdim, d.name[end]],"_")
-        attribs = filter(p -> p.first !== "units",ncvars[newdim].atts) # Remove units from attributes so it's in two places
+        attribs = ncvars[newdim].atts
         if newdim == "dep" # Add "positive" => "down" to depth
             attribs["positive"] = "down"
             attribs["standard_name"] = "depth"
@@ -58,8 +58,8 @@ end
 dims = vcat(dims,NCvar("tim",
                         ncvars["tim"].units,
                         ncdims["t"].dims,
-                        ncdims["t"].values,
-                        filter(p -> p.first !== "units",ncvars["tim"].atts),
+                        Array{DateTime}(ncvars["tim"].values[:]),
+                        ncvars["tim"].atts,
                         NCDatasets))
 pop!(ncvars,"tim")
 
