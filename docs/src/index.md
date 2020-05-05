@@ -45,7 +45,7 @@ end
 
 ## Using NCTiles
 
-The core functionality of NCTiles comes from a series of data structures that contain the information needed write NetCDF files, including the information need to read from a variety of types of source files. The main data structure used for writing is `NCvar`, which includes all the information needed to write a variable to a NetCDF file. The data itself can be in memory and included directly in the `NCvar` struct, or can be described in another class of data structures, with names ending in `Data`. These included `BinData`, for data in binary files, `NCData`, for data in NetCDF files, and `TileData` for data to be written out in separate tiles.
+The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from a variety of types of source files[maybe more concise]. The main data structure used for writing is `NCvar`, which includes all the information needed to write a variable to a NetCDF file. The data itself can be in memory and included directly in the `NCvar` struct, or can be described in another class of data structures, with names ending in `Data`. These included `BinData`, for data in binary files, `NCData`, for data in NetCDF files, and `TileData` for data to be written out in separate tiles.
 
 ### Basic Example
 
@@ -79,7 +79,7 @@ struct NCvar
 end
 ```
 
-The first attribute, `name`, should be a `String` and is what you want to call the variable in the file. The second are the units, which should also be a `String`. We then specify the dimensions, `dims`. For Dimension variables `dims` should be of length 1 (calling `size` on your dimension values like above if sufficnt). Next you specify the actual dimension values. For a Dimension variable, this must be a 1 dimensional array, like above. After the values you can specify any additional attributes that you want to add to the variable as a dictionary. The last attribute is the backend, which allows you to choose between `NCDatasets.jl` and `NetCDF.jl`. We have some support for `NetCDF.jl` and full support for `NCDatsets.jl`. Note that in creating these `NCvar` structs we do not do any CF Compliance checks, it is up to you to give CF compliant units and attributes.
+The first attribute, `name`, should be a `String` and is what you want to call the variable in the file. The second are the units, which should also be a `String`. We then specify the dimensions, `dims`. For Dimension variables `dims` should be of length 1 (calling `size` on your dimension values like above if sufficnt). Next you specify the actual dimension values. For a Dimension variable, this must be a 1 dimensional array, like above. After the values you can specify any additional attributes that you want to add to the variable as a dictionary. The last attribute is the backend, which allows you to choose between `NCDatasets.jl` and `NetCDF.jl`. We have some support for `NetCDF.jl` and full support for `NCDatasets.jl`. Note that in creating these `NCvar` structs we do not do any CF Compliance checks, it is up to you to give CF compliant units and attributes.
 
 #### Define the Data Source
 

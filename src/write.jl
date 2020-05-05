@@ -291,8 +291,10 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 tmpvar = replacevalues(replacevalues(v0,var.values),var)
                 writetiles.(v,Ref(tmpvar),1:var.values.numtiles,Ref(i),Ref(land_mask))
             else
-                checkdims(v0,var::NCvar)
-                if ndims == 1
+                checkdims(v0,var)
+                if ndims == 0
+                    v[i] = v0
+                elseif ndims == 1
                     v[:,i] = v0
                 elseif ndims == 2
                     v[:,:,i] = v0
@@ -578,6 +580,9 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
         for k in keys(myflds)
             addData(ds[k],myflds[k])
         end
+
+        # Only insert data for dims with data
+        dims = filter( d -> ~isempty(d.values),dims)
 
         # Add dimension data
         addDimData.(Ref(ds),dims)
