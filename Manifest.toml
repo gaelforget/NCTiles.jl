@@ -40,9 +40,9 @@ version = "1.0.0"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "4dead20a1606a60292529023d6eac18a1ef6432e"
+git-tree-sha1 = "7d7578b00789cf16c5f68fad71868e773edd58a2"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.17.12"
+version = "0.17.16"
 
 [[Dates]]
 deps = ["Printf"]
@@ -98,9 +98,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MeshArrays]]
 deps = ["CatViews", "NearestNeighbors", "Pkg", "Printf", "SparseArrays", "Statistics", "Unitful"]
-git-tree-sha1 = "9135f2981100c12b8a04d64e721556838df113bd"
+git-tree-sha1 = "b773d63b21896a38e344167d66aed797bf72b9c1"
 uuid = "cb8c808f-1acf-59a3-9d2b-6e38d009f683"
-version = "0.2.9"
+version = "0.2.10"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -124,16 +124,15 @@ uuid = "30363a11-5582-574a-97bb-aa9a979735b9"
 version = "0.10.2"
 
 [[OrderedCollections]]
-deps = ["Random", "Serialization", "Test"]
-git-tree-sha1 = "c4c13474d23c60d20a67b217f1d7f22a40edf8f1"
+git-tree-sha1 = "12ce190210d278e12644bcadf5b21cbdcf225cd3"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.1.0"
+version = "1.2.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "f8f5d2d4b4b07342e5811d2b6428e45524e241df"
+git-tree-sha1 = "f0abb338b4d00306500056a3fd44c221b8473ef2"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "1.0.2"
+version = "1.0.4"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Test", "UUIDs"]
@@ -166,9 +165,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "5a3bcb6233adabde68ebc97be66e95dcb787424c"
+git-tree-sha1 = "5c06c0aeb81bef54aed4b3f446847905eb6cbda0"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "0.12.1"
+version = "0.12.3"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -179,10 +178,10 @@ deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[URIParser]]
-deps = ["Test", "Unicode"]
-git-tree-sha1 = "6ddf8244220dfda2f17539fa8c9de20d6c575b69"
+deps = ["Unicode"]
+git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
 uuid = "30578b45-9adc-5946-b283-645ec420af67"
-version = "0.4.0"
+version = "0.4.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
@@ -193,9 +192,9 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[Unitful]]
 deps = ["ConstructionBase", "LinearAlgebra", "Random"]
-git-tree-sha1 = "dedf025ae6429de95d0d0f8622ad08e5b63a312e"
+git-tree-sha1 = "46833bd9378cc57550cf6a4dc6085ce2a49d0db8"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.1.0"
+version = "1.2.0"
 
 [[VersionParsing]]
 git-tree-sha1 = "80229be1f670524750d905f8fc8148e5a8c4537f"

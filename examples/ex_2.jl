@@ -11,13 +11,8 @@ README = readlines(joinpath(examplesdir,"README"))
 
 # Get all the metadata from the file and set up NCvars
 ncvars,ncdims,fileatts = readncfile(fname)
-f_fillval = get(fileatts,"_FillValue",NaN)
-f_missval = get(fileatts,"missing_value",NaN)
-f_ff = get(fileatts,"itile",1)
-f_ntile = get(fileatts,"ntile",1)
 
-filename = joinpath(savedir,"THETA.0009.nc")
-
+# Rewrite to a file
 write(ncvars,joinpath(savedir,"ex2.nc"),README=README,globalattribs=fileatts)
 
 #= Line above is shorthand for:
