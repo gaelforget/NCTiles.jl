@@ -364,7 +364,7 @@ Add dimension data to predefined dimensions in a NetCDF file.
 """
 function addDimData(ds,dimvar::NCvar)
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts)
-    defVar(ds,dimvar.name,dimvar.values,(dimvar.name,),attrib=atts)
+    defVar(ds,dimvar.name,dimvar.values[:],(dimvar.name,),attrib=atts)
 end
 
 """
@@ -492,7 +492,7 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
 end
 
 import Base: write
-
+using Pkg
 """
     write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
 
@@ -511,22 +511,39 @@ function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
 
         addData(fldvars,myfld)
 
-        dims = myfld.dims
+        if myfld.backend == NCDatasets
+            dims = myfld.dims
 
-        for dim in dims
-            addDimData.(ds,Ref(dim))
+            for dim in dims
+                addDimData.(ds,Ref(dim))
+            end
+            
+            close.(ds)
+        else
+            if Pkg.installed()["NetCDF"] < v"0.10"
+                NetCDF.close.(ds)
+            else
+                finalize.(ds)
+            end
         end
-
-        close.(ds)
     else # Create one file
         ds,fldvar,dimlist = createfile(savename,myfld,README,attribs=globalattribs)
 
         # Add field and dimension data
         addData(fldvar,myfld)
-        addDimData.(Ref(ds),myfld.dims)
 
-        # Close the file
-        close(ds)
+        if myfld.backend == NCDatasets
+            addDimData.(Ref(ds),myfld.dims)
+
+            # Close the file
+            close(ds)
+        else
+            if Pkg.installed()["NetCDF"] < v"0.10"
+                NetCDF.close(ds)
+            else
+                finalize(ds)
+            end
+        end
     end
 end
 
@@ -535,7 +552,7 @@ end
 
 Creates NetCDF file and writes myflds and all their dimensions to the file.
 """
-function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
+function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",globalattribs=Dict())
 
     if hastiledata(myflds)
         fldnames = collect(keys(myflds))
@@ -582,7 +599,7 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
         end
 
         # Only insert data for dims with data
-        dims = filter( d -> ~isempty(d.values),dims)
+        dims = filter( d -> ~isempty(d.values[:]),dims)
 
         # Add dimension data
         addDimData.(Ref(ds),dims)
@@ -591,3 +608,5 @@ function write(myflds::Dict,savename::String;README="",globalattribs=Dict())
         close(ds)
     end
 end
+
+write(myflds::Dict,savename::String;README="",globalattribs=Dict()) = write(Dict{AbstractString,NCvar}(myflds),savename;README="",globalattribs=Dict())
