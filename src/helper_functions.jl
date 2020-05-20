@@ -1,5 +1,21 @@
 
 """
+    get_testcases_if_needed(pth)
+Download `nctiles-testcases ` and decompress files if needed.
+"""
+function get_testcases_if_needed(pth)
+    if !isdir(pth)
+        run(`git clone https://github.com/gaelforget/nctiles-testcases $pth`)
+        run(`gunzip $pth/diags/state_3d_set1.0000000732.data.gz`)
+        run(`gunzip $pth/diags/state_3d_set1.0000001428.data.gz`)
+        run(`gunzip $pth/diags/state_3d_set1.0000002172.data.gz`)
+        run(`gunzip $pth/diags/trsp_3d_set1.0000000732.data.gz`)
+        run(`gunzip $pth/diags/trsp_3d_set1.0000001428.data.gz`)
+        run(`gunzip $pth/diags/trsp_3d_set1.0000002172.data.gz`)
+    end
+end
+
+"""
     getnsteps(d)
 
 Helper function: Determines number of time steps in data d. Input d can be
@@ -83,7 +99,7 @@ end
 
 findtimedim(v::NCvar) = findtimedim(v.dims)
 
-function findtimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) 
+function findtimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable)
     idx = [haskey(ds,dim) for dim in dimnames(v)]  # tcb dim isn't always listed as a variable in NetCDF files
     findall(idx)[findtimedim([ds[d] for d in dimnames(v)[idx]])]
 end
@@ -91,7 +107,7 @@ end
 """
     hastimedim::Array)
 
-Helper function: determines whether an array of dimensions has a time dimension. Can 
+Helper function: determines whether an array of dimensions has a time dimension. Can
     be Array of NCvars or NCDatasets.CFVariables.
 """
 function hastimedim(dims::Array)
@@ -108,7 +124,7 @@ function hastimedim(v::NCvar)
     return any(ncvardim) && hastimedim(v.dims[ncvardim])
 end
 
-function hastimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable) 
+function hastimedim(ds::NCDatasets.Dataset,v::NCDatasets.CFVariable)
     vardims = dimnames(v)[[haskey(ds,dim) for dim in dimnames(v)]] # tcb dim isn't always listed as a variable in NetCDF files
     hastimedim([ds[d] for d in vardims])
 end

@@ -1,6 +1,10 @@
 .DS_Store
 devel
 docs/build/
+examples/.ipynb_checkpoints/
+examples/*.ipynb
+examples/input/
+examples/output/
 examples/data/
 examples/grids/
 test/GRID_CS32
