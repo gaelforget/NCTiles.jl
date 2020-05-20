@@ -36,10 +36,10 @@ end
 
 ## Use examples
 
-`DataStructures/06_nctiles.ipynb` in this [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) provides a series of examples that overlap somewhat with the ones found in `examples/ex*.jl`:
+`DataStructures/06_nctiles.ipynb` in this [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) provides a series of examples. Additional examples found in the `examples/` folder include:
 
-- `ex_1.jl` reads a `binary` file containing one interpolated 2D field on a regular grid. It then writes that array to a `NetCDF`/`NCTiles` file.
-- `ex_2.jl` reads data from a `NetCDF` file containing one `tile` of model output. It then writes it to a new `NetCDF`/`NCTiles` file. This uses 3D data on a non-regular grid for one ocean subdivision (`tile`).
+- `Example1.jl` reads two-dimensional fields on a regular grid ("lat-lon") read from binary files, and then writes them to a netcdf file. This example illustrates the use of either `NCDatasets.jl` or `NetCDF.jl` as the backend.
+- `Example2.jl` reads two-dimensional fields from the netcdf file generated in `Example1`, and then re-writes them to a new netcdf file.
 - `ex_3.jl` is an example of interpolated model output processing in `CBIOMES` where several variables are included in the same `NetCDF`/`NCTiles` file.
 - `ex_4.jl` generates a tiled `NetCDF` output (i.e., a `nctiles` output) for a global 2D field on the non-regular `LLC90` grid (see `MeshArrays.jl`). Since the tile width is set to 90, this creates 13 files.
 - `ex_5.jl` shows how to write a `ClimGrid` struct from the `ClimateTools` package to a `NetCDF`/`NCTiles` file using `NCTiles`.
