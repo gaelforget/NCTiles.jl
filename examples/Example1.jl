@@ -68,8 +68,8 @@ write(field,joinpath(savedir,"ex1_NCDatasets.nc"),README=README)
 
 # +
 # Define Dimensions as `NCvar`s
-dims = [NCvar("lon_c","degrees east",size(lon),lon,Dict("long_name" => "longitude"),NetCDF),
-        NCvar("lat_c","degrees north",size(lat),lat,Dict("long_name" => "latitude"),NetCDF),
+dims = [NCvar("lon_c","degrees_east",size(lon),lon,Dict("long_name" => "longitude"),NetCDF),
+        NCvar("lat_c","degrees_north",size(lat),lat,Dict("long_name" => "latitude"),NetCDF),
         NCvar("tim",tim_units,Inf,tim,Dict(("long_name" => "time","standard_name" => "time")),NetCDF)
         ]
 
@@ -77,11 +77,22 @@ dims = [NCvar("lon_c","degrees east",size(lon),lon,Dict("long_name" => "longitud
 fielddata = BinData(fnames,prec,(n1,n2))
 field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname),NetCDF)
 
+write(field,joinpath(savedir,"ex1_NetCDF.nc"),README=README)
+
+#= Line above is shorthand for:
+using NetCDF
+
 # Create the NetCDF file and populate with dimension and field info, as well as dimension data
 ncfile,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NetCDF.nc"),field,README)
 
 # Add field data
 addData(fldvar,field)
 
-# Close the file
-#NetCDF.close(ncfile)
+# Close the file-  only needed for NetCDF v < 0.10
+using Pkg
+if Pkg.installed()["NetCDF"] < v"0.10"
+    NetCDF.close(ncfile)
+else
+    finalize(ncfile)
+end
+=#
