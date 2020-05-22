@@ -3,9 +3,7 @@ devel
 docs/build/
 examples/.ipynb_checkpoints/
 examples/*.ipynb
-examples/input/
-examples/output/
-examples/data/
-examples/grids/
+examples/input
+examples/output
 test/GRID_CS32
 test/CS32.tar.gz
