@@ -43,7 +43,7 @@ end
 - `Example3.jl` reads Global Ocean variables which are partitioned into subdomains and writes each one to a collection of `NetCDF` files ( _nctiles_ ).
 - `Example4.jl` reads two three-dimensional variables from the netcdf files generated in `Example3`, combines them into a single data structure, and then re-writes them together into a new netcdf file.
 - `Example5.jl` writes a `ClimGrid` struct from the `ClimateTools.jl` package to a netcdf file using `NCTiles.jl`.
-- `Example6.jl` demonstrates the specification of a climatological time axis.
+- `Example6.jl` (_Work In Progress_) demonstrates the specification of a climatological time axis.
 
 ## Using NCTiles
 
