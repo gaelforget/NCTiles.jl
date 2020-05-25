@@ -14,6 +14,18 @@
 # ---
 
 # # Example 6
+#
+# Two older examples are here read from file which have a climatology time axis.
+#
+# - 1. an example (correct) of one tile from the global ocean domain available in https://github.com/gaelforget/nctiles-testcases
+#
+# - 2. an example (incorrect) of interpolated output on a regular grid which can be accessesed via opendap as shown below.
+#
+# ```
+# srv="http://engaging-opendap.mit.edu:8080/thredds/dodsC/las/"
+# fil="id-2e0ea5ca2c/data_usr_local_tomcat_content_cbiomes_20200206_17_Nutrients_FeT.0001.nc.jnl"
+# ncdata=Dataset(srv*fil)
+# ```
 
 # +
 using NCTiles,NCDatasets
@@ -28,20 +40,38 @@ if ~ispath(outputs); mkpath(outputs); end
 savedir = joinpath(outputs,"ex6")
 if ~ispath(savedir); mkpath(savedir); end
 
-file_in="FeT.0001.nc"
 field_name = "FeT"
-README = [field_name*" -- Source: Gael Forget; version: alpha."]
+README = [field_name*" -- Source: Gael Forget; version: alpha."];
+# -
 
+
+# ### 1. one tile example
+
+# +
+ncvars,ncdims,fileatts = readncfile(joinpath(inputs*"diags_nctiles/FeT.0062.nc"))
+rm(joinpath(savedir,"ex6a.nc"),force=true)
+write(ncvars,joinpath(savedir,"ex6a.nc"),README=README)
+
+climatology_bounds = NCvar(ncvars["climatology_bounds"].name,
+                                        ncvars["climatology_bounds"].units,
+                                        [ncdims["tcb"],ncdims["t"]],
+                                        ncvars["climatology_bounds"].values,
+                                        ncvars["climatology_bounds"].atts,
+                                        ncvars["climatology_bounds"].backend)
+# -
+# ### 2. interpolated example
+
+# +
 #srv="http://engaging-opendap.mit.edu:8080/thredds/dodsC/las/"
 #fil="id-2e0ea5ca2c/data_usr_local_tomcat_content_cbiomes_20200206_17_Nutrients_FeT.0001.nc.jnl"
 #ncdata=Dataset(srv*fil)
 
+file_in="FeT.0001.nc"
 ncdata=Dataset(joinpath(inputs*file_in))
 
-# +
-#ncvars,ncdims,fileatts = readncfile(joinpath(inputs*file_in))
-#rm(joinpath(savedir,"ex6a.nc"),force=true)
-#write(ncvars,joinpath(savedir,"ex6a.nc"),README=README)
+ncvars,ncdims,fileatts = readncfile(joinpath(inputs*file_in))
+rm(joinpath(savedir,"ex6b.nc"),force=true)
+write(ncvars,joinpath(savedir,"ex6b.nc"),README=README)
 
 # +
 lon=ncdata["lon_c"][:]
@@ -64,19 +94,8 @@ vv=v[:,:,:,:]
 vv[findall(vv.<-1.0e33)].=NaN
 field = NCvar(field_name,u,dims,vv,Dict("long_name" => long_name),NCDatasets)
 
-rm(joinpath(savedir,"ex6a.nc"),force=true)
-write(field,joinpath(savedir,"ex6a.nc"),README=README)
-# + {}
-ncvars,ncdims,fileatts = readncfile(joinpath(inputs*"FeT.0062.nc"))
-rm(joinpath(savedir,"ex6b.nc"),force=true)
-write(ncvars,joinpath(savedir,"ex6b.nc"),README=README)
-
-climatology_bounds = NCvar(ncvars["climatology_bounds"].name,
-                                        ncvars["climatology_bounds"].units,
-                                        [ncdims["tcb"],dims[end]],
-                                        ncvars["climatology_bounds"].values,
-                                        ncvars["climatology_bounds"].atts,
-                                        ncvars["climatology_bounds"].backend)
+rm(joinpath(savedir,"ex6c.nc"),force=true)
+write(field,joinpath(savedir,"ex6c.nc"),README=README)
 # -
 
 
