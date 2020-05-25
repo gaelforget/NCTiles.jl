@@ -36,7 +36,7 @@ end
 
 ## Use examples
 
-`DataStructures/06_nctiles.ipynb` in this [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) provides a series of examples. Additional examples found in the `examples/` folder include:
+`DataStructures/03_nctiles.ipynb` in this [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) provides a series of examples. Additional examples, based on [nctiles-testcases](https://github.com/gaelforget/nctiles-testcases), are found in the `examples/` folder:
 
 - `Example1.jl` reads two-dimensional fields on a regular grid ("lat-lon") read from binary files, and then writes them to a netcdf file. This example illustrates the use of either `NCDatasets.jl` or `NetCDF.jl` as the backend.
 - `Example2.jl` reads two-dimensional fields from the netcdf file generated in `Example1`, and then re-writes them to a new netcdf file.
@@ -45,13 +45,19 @@ end
 - `Example5.jl` writes a `ClimGrid` struct from the `ClimateTools.jl` package to a netcdf file using `NCTiles.jl`.
 - `Example6.jl` (_Work In Progress_) demonstrates the specification of a climatological time axis.
 
-## Using NCTiles
+## Data Structures & Functions
 
-The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from source files. The data structure used for writing a variable is `NCvar`, which includes that variable's data and metadata. The data itself can be in memory and included directly in the `NCvar` struct, or can be described in another class of data structures, with names ending in `Data`. These included `BinData`, for data in binary files, `NCData`, for data in NetCDF files, and `TileData` for data to be written out in chunks.
+Higher-level APIs, which are practical for automated or distributed workflows which can be called upon e.g. as a model runs forward in time, are readily documented in the examples. Here we take a more detailed look at a basic one to document the underlying / core data structures and functionalities.
+
+The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from source files. The data structure used for writing a variable is `NCvar`, which includes that variable's data and metadata. The data itself can be in memory and included directly in the `NCvar` struct, or can be described in another data structure (`NCData` / `BinData` / `TileData`) :
+
+- `BinData` for data in binary files
+- `NCData` for data in NetCDF files
+- `TileData` for e.g. tiled model output when subdomains is often written out in distributed fashion across file collections (see [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev) for suitable Earth domain decomposition examples).
 
 ### Basic Example
 
-Here we show how to write a NetCDF file from a series of Binary data files.
+Here we show how to write a metadata-rich `NetCDF` file from a series of binary data files, which represents output from a climate model (`MITgcm` output in this example). We try here to document the `metadata` specification in detail as one of the main goals of `NCTiles.jl` is to facilitate the production of metadata-rich data sets that are easily reuseable. 
 
 #### Define Dimensions
 
