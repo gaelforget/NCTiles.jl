@@ -105,6 +105,83 @@ Read in a NetCDF file and return variables/dimensions as `NCvar` structs, and
 """
 function readncfile(fname,backend::Module=NCDatasets)
 
+    if backend==NetCDF
+        vars,dims,fileatts = readncfile_NetCDF(fname)
+    else
+        ds = Dataset(fname)
+
+        dims = Dict{AbstractString,NCvar}()
+        vars = Dict{AbstractString,NCvar}()
+
+        for k in keys(ds)
+            if ~haskey(dims,k)
+                k_units = get(ds[k].attrib,"units","")
+                k_atts = Dict(ds[k].attrib)
+                if length(dimnames(ds[k])) == 1 && k == dimnames(ds[k])[1] # this variable is also a dimension
+                    k_dims = length(ds[k])
+                    if length(size(ds[k])) == 1
+                        k_values = ds[k][:]
+                    elseif length(size(ds[k])) == 2
+                        k_values = ds[k][:,:]
+                    else
+                        k_values = NCData(fname,k,backend,typeof(ds[k].var[:][1])) # Pointer to this variable in the file
+                    end
+                    if !isa(k_values,NCData) && !any(isa.(k_values,Ref(Missing)))
+                        k_values = typeof(k_values[1]).(k_values)
+                    end
+                    dims[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
+                else # Not a dimension
+                    k_dims = Array{NCvar,1}()
+                    for d in dimnames(ds[k])
+                        #global k_dims,dims
+                        if !haskey(dims,d) 
+                            if haskey(ds,d) # Add the dimension
+                                d_units = get(ds[d].attrib,"units","")
+                                d_dims = length(ds[d])
+                                d_values = NCData(fname,d,backend,typeof(ds[d][1])) # Pointer to this variable in the file
+                                d_atts = Dict(ds[d].attrib)
+                                dims[d] = NCvar(d,d_units,d_dims,d_values,d_atts,backend)
+                            else
+                                dims[d] = NCvar(d,"",ds.dim[d],[],Dict(),backend)
+                            end
+
+                        end
+                        k_dims = cat(k_dims,dims[d],dims=1)
+                    end
+                    hasTimeDim = hastimedim(k_dims)
+                    if  ~hasTimeDim && length(k_dims) == 1# extra variable, not main field, just load the data now
+                        k_values = ds[k][:]
+                    elseif ~hasTimeDim && length(k_dims) == 2
+                        k_values = ds[k][:,:]
+                    elseif ~hasTimeDim && length(k_dims) == 3
+                        k_values = ds[k][:,:,:]
+                    elseif hasTimeDim
+                        k_values = NCData(fname,k,backend,eltype(ds[k].var)) # Pointer to this variable in the file
+                    end
+
+                    if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
+                        k_values = typeof(k_values[1]).(k_values)
+                    end
+
+                    vars[k] = NCvar(k,k_units,k_dims,k_values,k_atts,backend)
+                end
+            end
+        end
+
+        atts = ["_FillValue","missing_value","itile","ntile"]
+        fileatts = Dict()
+        for a in atts
+            if haskey(ds.attrib,a)
+                fileatts[a] = ds.attrib[a]
+            end
+        end
+        close(ds)
+    end
+        return vars,dims,fileatts
+end
+#=
+function readncfile_NetCDF(fname)
+
     ds = Dataset(fname)
 
     dims = Dict{AbstractString,NCvar}()
@@ -153,7 +230,7 @@ function readncfile(fname,backend::Module=NCDatasets)
                 elseif ~hasTimeDim && length(k_dims) == 3
                     k_values = ds[k][:,:,:]
                 elseif hasTimeDim
-                    k_values = NCData(fname,k,backend,eltype(ds[k].var[:])) # Pointer to this variable in the file
+                    k_values = NCData(fname,k,backend,eltype(ds[k].var)) # Pointer to this variable in the file
                 end
 
                 if !hasTimeDim && !any(isa.(k_values,Ref(Missing)))
@@ -175,3 +252,5 @@ function readncfile(fname,backend::Module=NCDatasets)
     close(ds)
     return vars,dims,fileatts
 end
+=#
+
