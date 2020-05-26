@@ -5,15 +5,13 @@
 [![Travis Build Status](https://travis-ci.org/gaelforget/NCTiles.jl.svg?branch=master)](https://travis-ci.org/gaelforget/NCTiles.jl)
 [![DOI](https://zenodo.org/badge/179139682.svg)](https://zenodo.org/badge/latestdoi/179139682)
 
-**NCTiles.jl** reads and writes [NetCDF files](https://en.wikipedia.org/wiki/NetCDF) that represent e.g. subdivisions of Earth's surface (`tiles`). Inter-operability with popular climate model grids and [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and generation of [CF-compliant](http://cfconventions.org) files are key goals of this package. 
+**NCTiles.jl** reads and writes [NetCDF files](https://en.wikipedia.org/wiki/NetCDF) that represent e.g. subdivisions of Earth's surface (`tiles`). Inter-operability with popular climate model grids / output via [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and practical generation of [CF-compliant](http://cfconventions.org) files are key goals of this package. 
 
-## `Notebooks/`
 
-- See `DataStructures/06_nctiles.ipynb` in this [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/)
+## Usage Examples
 
-## `Examples/`
-
-- Several examples illustrate the package functionalities in detail (see `examples/ex*.jl`)
+- See `DataStructures/06_nctiles.ipynb` in [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) for an overview
+- See `examples/Example*.jl` for more detail on core data structures and basic functions
 
 ## Background
 
