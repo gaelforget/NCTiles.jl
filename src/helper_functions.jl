@@ -80,7 +80,7 @@ function istimedim(d::Union{NCvar,NCDatasets.CFVariable})
         units = lowercase(d.units)
         longname = get(d.atts,"long_name","")
     else
-        units = lowercase(d.attrib["units"])
+        units = lowercase(get(d.attrib,"units",""))
         longname = get(d.attrib,"long_name","")
     end
     timeUnits = ["minutes","seconds","hours","days","minute","second","hour","day"]
