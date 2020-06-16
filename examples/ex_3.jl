@@ -10,7 +10,7 @@ README = readlines(joinpath(examplesdir,"README"))
 
 exdir = "../../../run/run_cs510/"
 fnameprefix = "darwin_v0.2_cs510"
-groups = ["Nutrients","Bulk_Ecosystem_Characteristcs","Phytoplankton_Functional_Types","Ocean_Color"]
+groups = ["Nutrients","Phytoplankton_Functional_Types","Ocean_Color"]
 
 rename = Dict(["TRAC05" => "PO4",
 "TRAC06" => "SiO2",
@@ -104,11 +104,15 @@ for group in groups
 
 
     # Set up NCvars
-    filename = joinpath(savedir,join([fnameprefix,lowercase(group)],"_")*".nc")
-    println(filename)
-    if isfile(filename); rm(filename); end
-
-    write(flds,filename,README=README)
+    filename_NCDatasets = joinpath(savedir,join([fnameprefix,lowercase(group)],"_")*"_NCDatasets.nc")
+    filename_NetCDF = joinpath(savedir,join([fnameprefix,lowercase(group)],"_")*"_NetCDF.nc")
+    
+    rm(filename_NCDatasets,force=true)
+    rm(filename_NetCDF,force=true)
+    println(filename_NCDatasets)
+    write(flds,filename_NCDatasets,README=README)
+    write(flds,filename_NetCDF,README=README)
+    
 #= Line above is shorthand for:
     # Create the NetCDF file and populate with dimension and field info
     ds,fieldvars,dimlist = createfile(filename,flds,README)

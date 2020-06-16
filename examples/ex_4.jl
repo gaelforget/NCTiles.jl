@@ -55,7 +55,7 @@ for fidx in fldidx
         println("Processing "*fldname)
         diaginfo = readAvailDiagnosticsLog(joinpath(exampledir,"available_diagnostics.log"),fldname)
         fielddata = BinData(fnames,prec,iosize,fidx)
-        tilfld = TileData(fielddata,tilesize,grid)
+        tilfld = TileData(fielddata,tillat.tileinfo,tilesize,prec,tillat.numtiles)
         flds = Dict([fldname => NCvar(fldname,diaginfo["units"],dims,tilfld,Dict(),NCDatasets),
                     "lon" => NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets),
                     "lat" => NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets),

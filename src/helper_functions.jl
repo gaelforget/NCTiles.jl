@@ -58,10 +58,14 @@ function checkdims(v0,var::NCvar)
     # if v0 is a scalar, 0 dims
     ~isa(v0,Array) ? ndimsv0 = 0 : ndimsv0 = length(size(v0))
 
-    if isa(var.values,Array) && isa(var.values[1],Number)
-        dimlist = getfield.(var.dims,:name)
+    if isa(var.dims,Array)
+        if (isa(var.values,Array) && isa(var.values[1],Number))
+            dimlist = getfield.(var.dims,:name)
+        else
+            dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
+        end
     else
-        dimlist = getfield.(var.dims[istimedim.(var.dims).==false],:name)
+        dimlist = [string(var.dims)]
     end
     if ndimsv0 != length(dimlist)
         dimlist = join(dimlist,", ")
