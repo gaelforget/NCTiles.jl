@@ -207,8 +207,8 @@ function readncfile_NetCDF(fname)
     vars = Dict{AbstractString,NCvar}()
 
     for d in keys(fildims)
-        d_units = get(fildims[d].atts,"units","")
-        d_atts = fildims[d].atts
+        d_units = get(filvars[d].atts,"units","")
+        d_atts = filvars[d].atts
         d_dims = Int(fildims[d].dimlen)
         if haskey(filvars,d)
             d_prec = eltype(filvars[d])

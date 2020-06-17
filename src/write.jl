@@ -203,9 +203,14 @@ function addVar(field::NCvar,dimlist::Array{NetCDF.NcDim})
     else
         atts = field.atts
     end
+    if isa(field.values,Array)
+        prec = eltype(field.values)
+    else
+        prec = field.values.precision
+    end
     fieldvar = NcVar(field.name,dimlist,
                         atts = atts,
-                        t = field.values.precision)
+                        t = prec)
 end
 
 """
@@ -357,8 +362,14 @@ end
 Helper function for writing a tile to a NetCDF file.
 """
 function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
+    
     if isa(v,Array)
-        v = v[findfirst(isequal(var.name),name.(v))]
+        if var.backend == NCDatasets
+            v = v[findfirst(isequal(var.name),name.(v))]
+        else
+            varnames = [vtmp.name for vtmp in v]
+            v = v[findfirst(isequal(var.name),varnames)]
+        end
     end
     tileinfo = var.values.tileinfo; tilesize = var.values.tilesize
     if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
@@ -369,13 +380,17 @@ function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
 
     v0 = gettile(v0,tileinfo,tilesize,tilenum)
     checkdims(v0,var::NCvar)
-    numdims = ndims(v0)
-    if numdims == 1
-        v[:,timeidx] = v0
-    elseif numdims == 2
-        v[:,:,timeidx] = v0
-    elseif numdims == 3
-        v[:,:,:,timeidx] = v0
+    if hastimedim(var)
+        numdims = ndims(v0)
+        if numdims == 1
+            v[:,timeidx] = v0
+        elseif numdims == 2
+            v[:,:,timeidx] = v0
+        elseif numdims == 3
+            v[:,:,:,timeidx] = v0
+        end
+    else
+        v[:] = v0
     end
 
 end
@@ -584,7 +599,14 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
             if isa(myflds[k].values,TileData)
                 addData(fldvars,myflds[k],land_mask = land_mask)
             else
-                tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
+                if myflds[k].backend == NCDatasets
+                    tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
+                    #tmpnames = [name.(fv) for fv in fldvars]
+                else
+                    tmpfldvars = [fv[findfirst(isequal(k),getproperty.(fv,:name))] for fv in fldvars]
+                    #tmpnames = [getproperty.(fv,:name) for fv in fldvars]
+                end
+                
                 addData.(tmpfldvars,Ref(myflds[k]))
             end
         end

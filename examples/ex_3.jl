@@ -30,7 +30,7 @@ lon=-179.75:0.5:179.75; lat=-89.75:0.5:89.75;
 timeinterval = 3
 tstart = 732; tend = 8766;
 #tstart = 6; tend = 6;
-timesteps = (tstart - timeinterval/2):timeinterval:(tend - timeinterval/2)
+timesteps = ((tstart - timeinterval/2):timeinterval:(tend - timeinterval/2))[1:4]
 nsteps = length(timesteps)
 timeinfname = lpad.(string.(Integer.(collect((timesteps.+timeinterval/2).*24))),10,'0')
 timeunits = "days since 1992-1-1 0:0:0"
@@ -111,7 +111,7 @@ for group in groups
     rm(filename_NetCDF,force=true)
     println(filename_NCDatasets)
     write(flds,filename_NCDatasets,README=README)
-    write(flds,filename_NetCDF,README=README)
+    write(flds_NetCDF,filename_NetCDF,README=README)
     
 #= Line above is shorthand for:
     # Create the NetCDF file and populate with dimension and field info
