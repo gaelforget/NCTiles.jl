@@ -198,7 +198,6 @@ end
 function readncfile_NetCDF(fname)
 
     backend = NetCDF
-    #ds = Dataset(fname)
     ncfile = NetCDF.open(fname)
     filvars = ncfile.vars
     fildims = ncfile.dim

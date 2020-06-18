@@ -127,7 +127,7 @@ end
 
  Return a new BinData object with the ith file, this being time index i.
 """
-function getindex(d::BinData,i::Integer) # Gets file at time index i
+function getindex(d::BinData,i::Integer)
     if isa(d.fnames,Array)
         newfnames = [d.fnames[i]]
     elseif i == 1
@@ -142,7 +142,7 @@ end
 
 Retrieve the ith time step from the NetCDF file.
 """
-function getindex(d::NCData,i) # Gets data at time index i
+function getindex(d::NCData,i)
     readncdata(d,i)
 end
 
@@ -274,7 +274,6 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
             v0 = readdata(var.values,:)
         end
 
-        
         if ~isnothing(land_mask)
             if length(size(v0)) == 1 && length(size(land_mask)) == 2
                 v0 = v0 .* land_mask[:,1]
@@ -310,11 +309,6 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 fnames = [var.values.fnames]
             end
         end
-
-        if ~hastimedim(var) #if no time steps, just read in and insert the whole thing
-            v0 = readdata(var.values,:)
-            v[:] = v0
-        else
             for i = startidx:nsteps
                 if isBinData || isNCData || isTileData
                     v0 = readdata(var.values,i)
@@ -347,8 +341,6 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                     end
                 end
             end
-        end
-
     else
         print("Unrecognized values")
     end
@@ -362,7 +354,6 @@ end
 Helper function for writing a tile to a NetCDF file.
 """
 function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
-    
     if isa(v,Array)
         if var.backend == NCDatasets
             v = v[findfirst(isequal(var.name),name.(v))]
@@ -418,8 +409,6 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
     if isa(field,Dict)
 
         dims = getdims(field::Dict)
-        #dims = unique(vcat([field[v].dims for v in keys(field)]...))
-        #dims = filter( d -> isa(d,NCvar),dims)
         field = collect(values(field))
 
         fldnames = getfield.(field[findall(hastimedim.(field))],:name)
@@ -601,10 +590,8 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
             else
                 if myflds[k].backend == NCDatasets
                     tmpfldvars = [fv[findfirst(isequal(k),name.(fv))] for fv in fldvars]
-                    #tmpnames = [name.(fv) for fv in fldvars]
                 else
                     tmpfldvars = [fv[findfirst(isequal(k),getproperty.(fv,:name))] for fv in fldvars]
-                    #tmpnames = [getproperty.(fv,:name) for fv in fldvars]
                 end
                 
                 addData.(tmpfldvars,Ref(myflds[k]))
