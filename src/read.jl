@@ -70,7 +70,7 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
         close(ds)
     else
         if Pkg.installed()["NetCDF"] < v"0.10"
-            NetCDF.close(ds)
+            NetCDF.close(var.fname)
         else
             finalize(var.fname)
         end
