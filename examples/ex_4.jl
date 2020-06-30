@@ -1,4 +1,4 @@
-using MeshArrays, NCDatasets, NCTiles, MITgcmTools
+using MeshArrays, NCDatasets, NCTiles, MITgcmTools,NetCDF
 
 
 exampledir = joinpath("data","ex4")
@@ -29,6 +29,12 @@ dims = [
     NCvar("dep_c","m",size(dep),dep,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NCDatasets),
     NCvar("tim",timeunits,Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)
 ]
+dims_NetCDF = [
+    NCvar("i_c","1",tilesize[1],1:tilesize[1],Dict("long_name" => "Cartesian coordinate 1"),NetCDF),
+    NCvar("j_c","1",tilesize[2],1:tilesize[2],Dict("long_name" => "Cartesian coordinate 2"),NetCDF),
+    NCvar("dep_c","m",size(dep),dep,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NetCDF),
+    NCvar("tim",timeunits,Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NetCDF)
+]
 
 
 # Define lat, lon, land, area, and thic TileData structs
@@ -55,7 +61,7 @@ for fidx in fldidx
         println("Processing "*fldname)
         diaginfo = readAvailDiagnosticsLog(joinpath(exampledir,"available_diagnostics.log"),fldname)
         fielddata = BinData(fnames,prec,iosize,fidx)
-        tilfld = TileData(fielddata,tilesize,grid)
+        tilfld = TileData(fielddata,tillat.tileinfo,tilesize,prec,tillat.numtiles)
         flds = Dict([fldname => NCvar(fldname,diaginfo["units"],dims,tilfld,Dict(),NCDatasets),
                     "lon" => NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets),
                     "lat" => NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets),
@@ -63,18 +69,28 @@ for fidx in fldidx
                     "land" => NCvar("land","1",dims[1:3],tilland,Dict(["long_name" => "land mask", "standard_name" => "land_binary_mask"]),NCDatasets),
                     "thic" => NCvar("thic","m",dims[3],thic,Dict("standard_name" => "cell_thickness"),NCDatasets)
         ])
+        flds_NetCDF = Dict([fldname => NCvar(fldname,diaginfo["units"],dims,tilfld,Dict(),NetCDF),
+                    "lon" => NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NetCDF),
+                    "lat" => NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NetCDF),
+                    "area" => NCvar("area","m^2",dims[1:2],tilarea,Dict(["long_name" => "grid cell area", "standard_name" => "cell_area"]),NetCDF),
+                    "land" => NCvar("land","1",dims[1:3],tilland,Dict(["long_name" => "land mask", "standard_name" => "land_binary_mask"]),NetCDF),
+                    "thic" => NCvar("thic","m",dims[3],thic,Dict("standard_name" => "cell_thickness"),NetCDF)
+        ])
+
         savepath = joinpath(saveloc,fldname)
         if !isdir(savepath); mkpath(savepath); end
         
-        savenamebase = joinpath(savepath,fldname)
+        savenamebase_NCDatasets = joinpath(savepath,fldname*"_NCDatasets")
+        savenamebase_NetCDF = joinpath(savepath,fldname*"_NetCDF")
 
-        #= Uncomment to remove existing files
+        #Uncomment to remove existing files
         numtiles = flds[fldname].values.numtiles
-        savenames = joinpath.(Ref(savepath),fldname*".".*lpad.(string.(1:numtiles),4,"0").*".nc")
+        savenames = savenamebase_NCDatasets*".".*lpad.(string.(1:numtiles),4,"0").*".nc"
         rm.(savenames, force=true)
-        =#
+        
 
-        write(flds,savenamebase,README=README)
+        write(flds,savenamebase_NCDatasets,README=README)
+        write(flds_NetCDF,savenamebase_NetCDF,README=README)
 
         #= Line above is shorthand for:
         numtiles = flds[fldname].values.numtiles
