@@ -70,7 +70,7 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
         dims = testvars["tile_ex"]["dims"]
         grid = testvars["tile_ex"]["grid"]
         gridvars = GridLoad(grid)
-        land = gridvars["hFacC"]
+        land = gridvars.hFacC
         for f in land.fIndex
             for d in 1:size(land,2)
                 land[f,d][land[f,d].==0] .= NaN
@@ -79,11 +79,11 @@ tempfiles = vcat(testvars["fnames2d"], testvars["fnames3d"],
         end
         tiledatafld2d = BinData(testvars["tile_ex"]["fnamestile2d"],Float32,Tuple(grid.ioSize))
         tilfld2d = TileData(tiledatafld2d,testvars["tile_ex"]["tilesize"],grid)
-        tillat = TileData(gridvars["YC"],tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
-        tillon = TileData(gridvars["XC"],tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
-        tilarea = TileData(gridvars["RAC"],tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
+        tillat = TileData(gridvars.YC,tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
+        tillon = TileData(gridvars.XC,tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
+        tilarea = TileData(gridvars.RAC,tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
         tilland = TileData(land,tilfld2d.tileinfo,tilfld2d.tilesize,tilfld2d.precision,tilfld2d.numtiles)
-        thic = gridvars["RC"][:,1]
+        thic = gridvars.RC[:,1]
         flds = Dict(["data2d" => NCvar("data2d",testvars["units"],[dims[1:2]; dims[4]],tilfld2d,Dict(),NCDatasets),
                     "lon" => NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets),
                     "lat" => NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets),

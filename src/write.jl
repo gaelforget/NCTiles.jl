@@ -93,11 +93,11 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
         prec = Float32
     end
     τ=Tiles(grid,ni,nj); TileMap=MeshArray(grid,prec);
-    [TileMap[τ[ii]["face"]][τ[ii]["i"],τ[ii]["j"]].=ii for ii in 1:length(τ)]
+    [TileMap[τ[ii].face][τ[ii].i,τ[ii].j].=ii for ii in 1:length(τ)]
     tileinfo = Dict("tileNo" => TileMap)
     gridvars=GridLoad(grid)
-    tileinfo["XC"]=gridvars["XC"]
-    tileinfo["YC"]=gridvars["YC"]
+    tileinfo["XC"]=gridvars.XC
+    tileinfo["YC"]=gridvars.YC
     return TileData(vals,tileinfo,tilesize,prec,Int(maximum(tileinfo["tileNo"])))
 end
 TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize::Tuple,GridSpec(grid))
