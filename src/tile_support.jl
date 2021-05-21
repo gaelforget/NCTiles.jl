@@ -36,11 +36,11 @@ function gettile(fldvals,tileinfo,tilesize,tilenum::Int)
         is3D = length(size(fldvals)) == 2 && size(fldvals)[2] > 1
         if is3D; n3 = size(fldvals)[2]; end
     end
-
+    prec = eltype(fldvals)
     if is3D # has depth
-        tilfld = Array{Any,3}(nothing,0,tilesize[2],n3)
+        tilfld = Array{prec,3}(undef,0,tilesize[2],n3)
     else
-        tilfld = Array{Any,2}(nothing,0,tilesize[2])
+        tilfld = Array{prec,2}(undef,0,tilesize[2])
     end
     if isa(fldvals,MeshArrays.gcmfaces)
         nfaces = fldvals.nFaces
