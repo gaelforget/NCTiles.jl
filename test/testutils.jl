@@ -101,7 +101,7 @@ function testfile(fname,checkfld)
         varcheck["values"] = true
         grid = checkfld.values.tileinfo["XC"].grid
         gridvars = GridLoad(grid)
-        land = gridvars["hFacC"]
+        land = gridvars.hFacC
         for f in land.fIndex
             for d in 1:size(land,2)
                 land[f,d][land[f,d].==0] .= NaN
