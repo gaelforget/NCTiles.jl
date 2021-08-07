@@ -4,6 +4,11 @@ using NCTiles
 makedocs(
     sitename = "NCTiles",
     format = Documenter.HTML(),
+   pages=[
+        "Home" => "index.md",
+        "maindocs.md",
+        "examples.md",
+        "API.md"],
     modules = [NCTiles]
 )
 
