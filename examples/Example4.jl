@@ -20,7 +20,8 @@
 # +
 using NCTiles,NCDatasets
 
-inputs = "input/"
+inputs=NCTiles.NCTILES_TESTCASES
+NCTiles.ensure_testcases_installed()
 outputs = "output/"
 nt="0003"
 

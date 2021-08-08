@@ -22,8 +22,8 @@
 using NCTiles,NCDatasets
 
 # File Paths
-inputs = "input/"
-NCTiles.get_testcases_if_needed(inputs)
+inputs=NCTiles.NCTILES_TESTCASES
+NCTiles.ensure_testcases_installed()
 
 outputs = "output/"
 if ~ispath(outputs); mkpath(outputs); end

@@ -38,8 +38,8 @@ include("helper_functions.jl");
 
 # +
 # File Paths
-inputs = "input/"
-get_testcases_if_needed(inputs)
+inputs=NCTiles.NCTILES_TESTCASES
+NCTiles.ensure_testcases_installed()
 
 outputs = "output/ex3/"
 if ~ispath(outputs); mkpath(outputs); end

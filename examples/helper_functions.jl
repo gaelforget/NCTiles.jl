@@ -2,23 +2,6 @@ using MeshArrays, MITgcmTools
 # this is needed cause writeNetCDFtiles uses `name` etc
 
 """
-    get_testcases_if_needed(pth)
-
-Download and decompress input files if needed.
-"""
-function get_testcases_if_needed(pth)
-    if !isdir(pth)
-        run(`git clone https://github.com/gaelforget/nctiles-testcases $pth`)
-        run(`gunzip $pth/diags/state_3d_set1.0000000732.data.gz`)
-        run(`gunzip $pth/diags/state_3d_set1.0000001428.data.gz`)
-        run(`gunzip $pth/diags/state_3d_set1.0000002172.data.gz`)
-        run(`gunzip $pth/diags/trsp_3d_set1.0000000732.data.gz`)
-        run(`gunzip $pth/diags/trsp_3d_set1.0000001428.data.gz`)
-        run(`gunzip $pth/diags/trsp_3d_set1.0000002172.data.gz`)
-    end
-end
-
-"""
     input_file_paths(inputs)
 
 Put all folder and file paths in a dictionnary.

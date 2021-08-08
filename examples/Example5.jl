@@ -27,8 +27,8 @@
 using ClimateTools,NCDatasets,NCTiles
 
 # File Paths
-inputs = "input/"
-NCTiles.get_testcases_if_needed(inputs)
+inputs=NCTiles.NCTILES_TESTCASES
+NCTiles.ensure_testcases_installed()
 
 outputs = "output/"
 if ~ispath(outputs); mkpath(outputs); end
@@ -42,7 +42,7 @@ field_name = "tas"
 
 if ~isfile(joinpath(inputs,file_in))
     run(`wget http://esgf-data1.diasjp.net/thredds/fileServer/esg_dataroot/cmip5/output1/MIROC/MIROC5/piControl/day/atmos/day/r1i1p1/v20161012/tas/tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc`)
-    run(`mv tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc ../inputs/`)
+    run(`mv tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc $(inputs)`)
 end
 # -
 

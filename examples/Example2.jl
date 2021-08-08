@@ -20,7 +20,8 @@
 # +
 using NCTiles,NetCDF
 
-inputs = "input/"
+inputs=NCTiles.NCTILES_TESTCASES
+NCTiles.ensure_testcases_installed()
 outputs = "output/"
 
 # Using NCDatasets backend
