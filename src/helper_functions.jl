@@ -7,7 +7,7 @@ Download `nctiles-testcases` Artifact and decompress files if needed.
 function ensure_testcases_installed()
     p=dirname(pathof(NCTiles))
     artifact_toml = joinpath(p, "../Artifacts.toml")
-    Pkg.ensure_artifact_installed("NCTILES_TESTCASES","Artifacts.toml")
+    Pkg.ensure_artifact_installed("NCTILES_TESTCASES",artifact_toml)
     
     fils=["state_3d_set1.0000000732.data.gz","state_3d_set1.0000001428.data.gz","state_3d_set1.0000002172.data.gz",
     "trsp_3d_set1.0000000732.data.gz","trsp_3d_set1.0000001428.data.gz","trsp_3d_set1.0000002172.data.gz"]

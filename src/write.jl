@@ -535,7 +535,7 @@ function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
             
             close.(ds)
         else
-            if Pkg.installed()["NetCDF"] < v"0.10"
+            if pkg_version("NetCDF") < v"0.10"
                 NetCDF.close.(ds)
             else
                 finalize.(ds)
@@ -553,7 +553,7 @@ function write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
             # Close the file
             close(ds)
         else
-            if Pkg.installed()["NetCDF"] < v"0.10"
+            if pkg_version("NetCDF") < v"0.10"
                 NetCDF.close(ds)
             else
                 finalize(ds)
@@ -607,7 +607,7 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
 
             close.(ds)
         else
-            if Pkg.installed()["NetCDF"] < v"0.10"
+            if pkg_version("NetCDF") < v"0.10"
                 NetCDF.close.(ds)
             else
                 finalize.(ds)
@@ -635,7 +635,7 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
             # Close the file
             close(ds)
         else
-            if Pkg.installed()["NetCDF"] < v"0.10"
+            if pkg_version("NetCDF") < v"0.10"
                 NetCDF.close(ds)
             else
                 finalize(ds)
