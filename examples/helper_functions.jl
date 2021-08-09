@@ -72,7 +72,6 @@ function dimensions_etc_native(pth::Dict)
     γ = GridSpec("LatLonCap",pth["grid"])
     γ = gcmgrid(pth["grid"],γ.class,γ.nFaces,γ.fSize, γ.ioSize, prec, γ.read, γ.write)
     Γ = GridLoad(γ)
-    GridAddWS!(Γ)
 
     tilesize = (90,90)
     (n1,n2) = (90,1170)
@@ -86,9 +85,9 @@ function dimensions_etc_native(pth::Dict)
     j_s = NCvar("j_s","1",tilesize[2],1:tilesize[2],Dict("long_name" => "Cartesian coordinate 2"),nc)
 
     # Land masks indicate which points are land, which are ocean
-    land_c = Γ["hFacC"]
-    land_w = Γ["hFacW"]
-    land_s = Γ["hFacS"]
+    land_c = Γ.hFacC
+    land_w = Γ.hFacW
+    land_s = Γ.hFacS
     for f in land_c.fIndex
         for d in 1:size(land_c,2)
             land_c[f,d][land_c[f,d].==0] .= NaN
@@ -104,25 +103,25 @@ function dimensions_etc_native(pth::Dict)
     land2d_c=land_c[:,1]
 
     # Variable indicating the depth/thickness of each cell
-    thic_c = Γ["DRF"]
-    thic_l = Γ["DRC"][2:end]
+    thic_c = Γ.DRF
+    thic_l = Γ.DRC[2:end]
 
     # TileData struct- calculates the locations of each tile in the
     # data to retrieve when needed for writing
-    area_c = TileData(Γ["RAC"],tilesize,γ)
+    area_c = TileData(Γ.RAC,tilesize,γ)
     tileinfo = area_c.tileinfo; numtiles = area_c.numtiles
-    area_w = TileData(Γ["RAW"],tileinfo,tilesize,prec,numtiles)
-    area_s = TileData(Γ["RAS"],tileinfo,tilesize,prec,numtiles)
+    area_w = TileData(Γ.RAW,tileinfo,tilesize,prec,numtiles)
+    area_s = TileData(Γ.RAS,tileinfo,tilesize,prec,numtiles)
     land_c = TileData(land_c,tileinfo,tilesize,prec,numtiles)
     land2d_c = TileData(land2d_c,tileinfo,tilesize,prec,numtiles)
     land_w = TileData(land_w,tileinfo,tilesize,prec,numtiles)
     land_s = TileData(land_s,tileinfo,tilesize,prec,numtiles)
-    lat_c = TileData(Γ["YC"],tileinfo,tilesize,prec,numtiles)
-    lon_c = TileData(Γ["XC"],tileinfo,tilesize,prec,numtiles)
-    lat_w = TileData(Γ["YW"],tileinfo,tilesize,prec,numtiles)
-    lon_w = TileData(Γ["XW"],tileinfo,tilesize,prec,numtiles)
-    lat_s = TileData(Γ["YS"],tileinfo,tilesize,prec,numtiles)
-    lon_s = TileData(Γ["XS"],tileinfo,tilesize,prec,numtiles)
+    lat_c = TileData(Γ.YC,tileinfo,tilesize,prec,numtiles)
+    lon_c = TileData(Γ.XC,tileinfo,tilesize,prec,numtiles)
+    lat_w = TileData(Γ.YW,tileinfo,tilesize,prec,numtiles)
+    lon_w = TileData(Γ.XW,tileinfo,tilesize,prec,numtiles)
+    lat_s = TileData(Γ.YS,tileinfo,tilesize,prec,numtiles)
+    lon_s = TileData(Γ.XS,tileinfo,tilesize,prec,numtiles)
 
     # NCvar structs outline fields and their metadata to be written to the file
     lon_c = NCvar("lon","degrees_east",[i_c,j_c],lon_c,Dict("long_name" => "longitude"),nc)
@@ -168,7 +167,7 @@ function prep_nctiles_interp(inputs,set,nam,prc)
 
     flddatadir = joinpath(pth["interp"],nam)
     fnames = joinpath.(Ref(flddatadir),filter(x -> occursin(".data",x), readdir(flddatadir)))
-    diaginfo = readAvailDiagnosticsLog(pth["diaglist"],nam)
+    diaginfo = read_available_diagnostics(nam; filename=joinpath(inputs,"available_diagnostics.log"))
     if diaginfo["levs"]==1 && diaginfo["code"][2]=='M'
         flddata = BinData(fnames,prc,(Λ["n1"],Λ["n2"]))
         dims = [Λ["lon_c"],Λ["lat_c"],Λ["tim"]]
@@ -201,7 +200,7 @@ function prep_nctiles_native(inputs,set,nam,prc)
     savepath = joinpath(writedir,nam)
     if ~ispath(savepath); mkpath(savepath); end
     savename = joinpath.(Ref(savepath),nam)
-    diaginfo = readAvailDiagnosticsLog(pth["diaglist"],nam);
+    diaginfo = read_available_diagnostics(nam; filename=joinpath(inputs,"available_diagnostics.log"))
     if diaginfo["levs"]==1 && diaginfo["code"][2]=='M'
         flddata = BinData(fnames,prc,(Λ["n1"],Λ["n2"]))
         dims = [Λ["i_c"],Λ["j_c"],Λ["tim"]]

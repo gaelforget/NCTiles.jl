@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .jl
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       format_version: '1.5'
+#       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Julia 1.3.1
+#     display_name: Julia 1.7.0-beta3
 #     language: julia
-#     name: julia-1.3
+#     name: julia-1.7
 # ---
 
 # # Example 3
@@ -28,7 +28,7 @@ if false
     Pkg.add(PackageSpec(name="MITgcmTools", rev="master"))
 end
 
-using NCTiles, MITgcmTools
+using NCTiles; 
 include("helper_functions.jl");
 # -
 
@@ -41,7 +41,7 @@ include("helper_functions.jl");
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
 
-outputs = "output/ex3/"
+outputs = joinpath(tempdir(),"NCTILES_TESTCASES_OUTPUT/ex3/")
 if ~ispath(outputs); mkpath(outputs); end
 
 # I/O Back-End

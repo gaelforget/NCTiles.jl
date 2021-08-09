@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .jl
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       format_version: '1.5'
+#       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Julia 1.3.1
+#     display_name: Julia 1.7.0-beta3
 #     language: julia
-#     name: julia-1.3
+#     name: julia-1.7
 # ---
 
 # # Example 5
@@ -24,13 +24,13 @@
 # - time: time
 
 # +
-using ClimateTools,NCDatasets,NCTiles
+using ClimateBase, NCDatasets, NCTiles
 
 # File Paths
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
 
-outputs = "output/"
+outputs = joinpath(tempdir(),"NCTILES_TESTCASES_OUTPUT/")
 if ~ispath(outputs); mkpath(outputs); end
 
 savedir = joinpath(outputs,"ex5")
@@ -40,9 +40,9 @@ if ~ispath(savedir); mkpath(savedir); end
 file_in="tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc"
 field_name = "tas"
 
-if ~isfile(joinpath(inputs,file_in))
+if ~isfile(joinpath(outputs,file_in))
     run(`wget http://esgf-data1.diasjp.net/thredds/fileServer/esg_dataroot/cmip5/output1/MIROC/MIROC5/piControl/day/atmos/day/r1i1p1/v20161012/tas/tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc`)
-    run(`mv tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc $(inputs)`)
+    run(`mv tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc $(outputs)`)
 end
 # -
 
@@ -71,7 +71,7 @@ function climgridtoncvar(C::ClimGrid,N::String)
 end   
 
 # Whole Data Set
-C = load(joinpath(inputs,file_in),field_name)
+C = load(joinpath(outputs,file_in),field_name)
 writefld = climgridtoncvar(C,field_name)
 write(writefld,joinpath(savedir,"ex5_whole.nc"))
 

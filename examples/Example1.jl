@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .jl
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       format_version: '1.5'
+#       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Julia 1.3.1
+#     display_name: Julia 1.7.0-beta3
 #     language: julia
-#     name: julia-1.3
+#     name: julia-1.7
 # ---
 
 # # Example 1
@@ -26,7 +26,7 @@ using NCTiles,NCDatasets,NetCDF
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
 
-outputs = "output/"
+outputs = joinpath(tempdir(),"NCTILES_TESTCASES_OUTPUT/")
 if ~ispath(outputs); mkpath(outputs); end
 
 selectfields = ["ETAN"]
@@ -78,21 +78,19 @@ fielddata = BinData(fnames,prec,(n1,n2))
 field = NCvar(selectfields[1],units,dims,fielddata,Dict("long_name" => longname),NetCDF)
 
 write(field,joinpath(savedir,"ex1_NetCDF.nc"),README=README)
+# -
+# Note: the `write` function is a shorthand for
+#
+# ```
+# # Create the NetCDF file and populate with dimension and field info, as well as dimension data
+# ncfile,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NetCDF.nc"),field,README)
+#
+# # Add field data
+# addData(fldvar,field)
+#
+# # Close the file-  only needed for NetCDF v < 0.10
+# finalize(ncfile)
+# ```
 
-#= Line above is shorthand for:
-using NetCDF
 
-# Create the NetCDF file and populate with dimension and field info, as well as dimension data
-ncfile,fldvar,dimlist = createfile(joinpath(savedir,"ex1_NetCDF.nc"),field,README)
 
-# Add field data
-addData(fldvar,field)
-
-# Close the file-  only needed for NetCDF v < 0.10
-using Pkg
-if Pkg.installed()["NetCDF"] < v"0.10"
-    NetCDF.close(ncfile)
-else
-    finalize(ncfile)
-end
-=#

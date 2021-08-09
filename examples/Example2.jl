@@ -5,12 +5,12 @@
 #     text_representation:
 #       extension: .jl
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       format_version: '1.5'
+#       jupytext_version: 1.11.3
 #   kernelspec:
-#     display_name: Julia 1.3.1
+#     display_name: Julia 1.7.0-beta3
 #     language: julia
-#     name: julia-1.3
+#     name: julia-1.7
 # ---
 
 # # Example 2
@@ -22,7 +22,9 @@ using NCTiles,NetCDF
 
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
-outputs = "output/"
+
+outputs = joinpath(tempdir(),"NCTILES_TESTCASES_OUTPUT/")
+if ~ispath(outputs); mkpath(outputs); end
 
 # Using NCDatasets backend
 file_in=outputs*"ex1/ex1_NCDatasets.nc"
