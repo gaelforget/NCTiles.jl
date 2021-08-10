@@ -36,50 +36,54 @@ if ~ispath(outputs); mkpath(outputs); end
 savedir = joinpath(outputs,"ex5")
 if ~ispath(savedir); mkpath(savedir); end
 
-#original climate model output file 
-file_in="tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc"
-field_name = "tas"
-
-if ~isfile(joinpath(outputs,file_in))
-    run(`wget http://esgf-data1.diasjp.net/thredds/fileServer/esg_dataroot/cmip5/output1/MIROC/MIROC5/piControl/day/atmos/day/r1i1p1/v20161012/tas/tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc`)
-    run(`mv tas_day_MIROC5_piControl_r1i1p1_20000101-20091231.nc $(outputs)`)
-end
-# -
-
-
 """
         climgridtoncvar(C::ClimGrid,N::String)
 
-Creates an NCvar struct from a ClimGrid object. NCvar struct can then be written
+Creates an NCvar struct from a ClimArray object. NCvar struct can then be written
 to a NetCDF file using write().
 
-Ex: C = load(fname,fldname)
-writefld = climgridtoncvar(C,fldname)
+Ex: C = ClimateBase.ncread(fil, "ETAN")
+writefld = ClimArray_to_NCvar(C,"ETAN")
 write(writefld,"myfile.nc")
 """
-function climgridtoncvar(C::ClimGrid,N::String)
-        x, y, timevec = ClimateTools.getdims(C) # may need to check number of dims first
-        timevec = NCDatasets.timeencode(timevec, C.timeattrib["units"], get(C.timeattrib,"calendar","standard"))
+function ClimArray_to_NCvar(C::ClimArray,N::String)
+        x = C.dims[1][:]
+        y = C.dims[2][:]
+        timevec = DateTime.(C.dims[3][:])
+        timeunit = "days since 1992-01-01"
+        timevec = NCDatasets.timeencode(timevec, timeunit)
         
-        
-        dims = [NCvar(C.dimension_dict["lon"],C.lonunits,size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
-                NCvar(C.dimension_dict["lat"],C.latunits,size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
-                NCvar("time",C.timeattrib["units"],Inf,timevec,Dict(("long_name" => "tim","standard_name" => "time")),NCDatasets)
+        dims = [NCvar("lon","degrees_east",size(C.data)[1],x,Dict("long_name" => "longitude"),NCDatasets),
+                NCvar("lat","degrees_north",size(C.data)[2],y,Dict("long_name" => "latitude"),NCDatasets),
+                NCvar("time",timeunit,Inf,timevec,Dict(("long_name" => "Ti","standard_name" => "time")),NCDatasets)
                 ]
         
-        return NCvar(N,C.dataunits,dims,C.data.data,C.varattribs,NCDatasets)
+        return NCvar(N,C.attrib["units"],dims,C.data,C.attrib,NCDatasets)
 end   
 
-# Whole Data Set
-C = load(joinpath(outputs,file_in),field_name)
-writefld = climgridtoncvar(C,field_name)
-write(writefld,joinpath(savedir,"ex5_whole.nc"))
+## Read via NCTiles.jl and write via ClimateBase.jl
 
-# Extracted Sub-Set
-poly_reg = [[NaN -65 -80 -80 -65 -65];[NaN 42 42 52 52 42]]
-E = load(joinpath(inputs,file_in),field_name, poly=poly_reg)
-writefld = climgridtoncvar(E,field_name)
-write(writefld,joinpath(savedir,"ex5_extract.nc"),
-    globalattribs=E.globalattribs)
+fil=joinpath(outputs,"ex1/ex1_NetCDF.nc")
+ncvars,ncdims,fileatts = readncfile(fil)
 
+#filout=joinpath(savedir,"ex5_NCTiles.nc")
+#write(ncvars["ETAN"],filout,globalattribs=fileatts)
 
+lons=ncdims["lon_c"].values[:];
+lats=ncdims["lat_c"].values[:];
+t=ncdims["tim"].values[:];
+dimensions = (Lon(lons), Lat(lats), ClimateBase.Ti(t))
+
+data=ncvars["ETAN"].values[:];
+units=ncvars["ETAN"].units;
+A = ClimArray(data, dimensions; name = "ETAN", attrib = Dict("units" => units))
+
+filout=joinpath(savedir,"ex5_ClimateBase.nc")
+ncwrite(filout, A)
+
+## Read via ClimateBase.jl and write via NCTiles.jl
+
+ETAN = ClimateBase.ncread(fil, "ETAN")
+ETAN = ClimArray_to_NCvar(ETAN,"ETAN")
+filout=joinpath(savedir,"ex5_ClimArray_to_NCvar.nc")
+write(ETAN,filout)
