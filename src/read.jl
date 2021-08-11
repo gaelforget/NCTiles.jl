@@ -69,7 +69,7 @@ function readncdata(var::NCData,i::Union{Colon,Integer}=:)
     if var.backend == NCDatasets
         close(ds)
     else
-        if Pkg.installed()["NetCDF"] < v"0.10"
+        if pkg_version("NetCDF") < v"0.10"
             NetCDF.close(var.fname)
         else
             finalize(var.fname)

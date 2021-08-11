@@ -5,16 +5,5 @@
 [![Travis Build Status](https://travis-ci.org/gaelforget/NCTiles.jl.svg?branch=master)](https://travis-ci.org/gaelforget/NCTiles.jl)
 [![DOI](https://zenodo.org/badge/179139682.svg)](https://zenodo.org/badge/latestdoi/179139682)
 
-**NCTiles.jl** reads and writes [NetCDF files](https://en.wikipedia.org/wiki/NetCDF) that represent e.g. subdivisions of Earth's surface (`tiles`). Inter-operability with popular climate model grids / output via [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and practical generation of [CF-compliant](http://cfconventions.org) files are key goals of this package. 
-
-
-## Usage Examples
-
-- See `DataStructures/06_nctiles.ipynb` in [GlobalOceanNotebooks repo](https://github.com/gaelforget/GlobalOceanNotebooks/) for an overview
-- See `examples/Example*.jl` for more detail on core data structures and basic functions
-
-## Background
-
-`NCTiles.jl` derives from the earlier `nctiles` implementation in [gcmfaces](https://github.com/MITgcm/gcmfaces) ([Forget et al. 2015](https://doi.org/10.5194/gmd-8-3071-2015)).
-
+[NCTiles.jl](https://github.com/gaelforget/NCTiles.jl) mainly reads and writes [NetCDF](https://en.wikipedia.org/wiki/NetCDF) files (`nc`) that represent e.g. the whole Earth surface or a subdomain (`tiles`) based on the [CF coventions](http://cfconventions.org). Goals of [NCTiles.jl](https://github.com/gaelforget/NCTiles.jl) include (1) inter-operability with popular climate model grids via [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and [ClimateModels.jl](https://github.com/gaelforget/ClimateModels.jl); (2) making it easy to generate [CF-compliant](http://cfconventions.org) files from suitable Array formats. 
 

@@ -1,12 +1,11 @@
 # `NCTiles.jl` Package Documentation
 
-**NCTiles.jl** reads and writes [NetCDF files](https://en.wikipedia.org/wiki/NetCDF) that represent e.g. subdivisions of Earth's surface (`tiles`). Inter-operability with popular climate model grids and [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and generation of [CF-compliant](http://cfconventions.org) files are key goals of this package. 
+[NCTiles.jl](https://github.com/gaelforget/NCTiles.jl) mainly reads and writes [NetCDF](https://en.wikipedia.org/wiki/NetCDF) files (`nc`) that represent e.g. the whole Earth surface or a subdomain (`tiles`) based on the [CF coventions](http://cfconventions.org). Goals of [NCTiles.jl](https://github.com/gaelforget/NCTiles.jl) include (1) inter-operability with popular climate model grids via [MeshArrays.jl](https://github.com/JuliaClimate/MeshArrays.jl) and [ClimateModels.jl](https://github.com/gaelforget/ClimateModels.jl); (2) making it easy to generate [CF-compliant](http://cfconventions.org) files from suitable Array formats. 
 
 ```@contents
 Pages = [
     "maindocs.md",
     "examples.md",
-    "API.md",
 ]
 Depth = 2
 ```

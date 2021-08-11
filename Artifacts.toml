@@ -1,0 +1,7 @@
+[NCTILES_TESTCASES]
+git-tree-sha1 = "4c36bdda8c1f8388b7f6de8da17d965dab33431e"
+lazy = true
+
+    [[NCTILES_TESTCASES.download]]
+    sha256 = "2cfb8f251c598ce1934d8410cfcdc068fbc428a9fb6b7380113ab17588e08780"
+    url = "https://github.com/gaelforget/nctiles-testcases/archive/refs/tags/v0.1.tar.gz"

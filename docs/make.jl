@@ -1,5 +1,20 @@
-using Documenter
-using NCTiles
+using Documenter, Literate, NCTiles, Pkg
+
+pth=@__DIR__
+lst=("Example1.jl","Example2.jl","Example3.jl","Example4.jl","Example5.jl","Example6.jl")
+lstExecute=("Example1.jl","Example2.jl","Example3.jl","Example4.jl","Example5.jl","Example6.jl")
+for i in lst
+    EXAMPLE = joinpath(pth, "..", "examples", i)
+    OUTPUT = joinpath(pth, "src","generated")
+    Pkg.activate(joinpath(pth,"..","docs"))
+    Literate.markdown(EXAMPLE, OUTPUT, documenter = true)
+    cd(pth)
+    Pkg.activate(joinpath(pth,"..","docs"))
+    tmp=xor(occursin.(i,lstExecute)...)
+    Literate.notebook(EXAMPLE, OUTPUT, execute = tmp)
+    cd(pth)
+    #Literate.notebook(EXAMPLE, OUTPUT, flavor = :pluto)
+end
 
 makedocs(
     sitename = "NCTiles",
@@ -7,7 +22,10 @@ makedocs(
    pages=[
         "Home" => "index.md",
         "maindocs.md",
-        "examples.md",
+        "Examples" => Any[
+            "Guide " => "examples.md",
+            "Listing" => [map(s -> "generated/$(s[1:end-2])md",lst)...],
+            ],
         "API.md"],
     modules = [NCTiles]
 )

@@ -1,19 +1,54 @@
 # User Guide
 
-`NCTiles.jl` first goes through lazy operations, on data structure, as it obtains information about variables etc. The second phase calls `write` function to instantiate and write files. _Note:_ some of the included functions are interfaces to `MITgcm` output.
+`NCTiles.jl` generally operates in two steps:
 
-Data structures:
+1. lazy operations, on data structures, to obtain information about variables without data transfer.
+1. calling the `write` function to instantiate and write files; or the `read` function for the reverse.
 
-- `NCvar` contains information needed to write a NetCDF file which can include a list of filenames (see `BinData`) if the data is not loaded into memory.
-- `NCData` contains a string (NetCDF file name) + metadata to read files.
-- `BinData` is a container for one field.
-- `TileData` contains a `MeshArray` or `BinData` struct in `vals`,
-    information about the tile layout in `tileinfo`, and metadata needed to
-    read/write tile data.
+Higher-level APIs, which are practical for automated or distributed workflows which can be called upon e.g. as a model runs forward in time, are readily documented in the [Examples](@ref Examples) section. 
 
-As an example:
+The top level data structures is `NCvar` which contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref Data Structures) for more detail about `NCvar` and embeded data structures. 
+
+Below we walk through a [basic example](@ref Basic Example) to further document the internals, core data structures, and functionalities.
+
+## Data Structures
+
+The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from source files. 
+
+The data structure used for writing or reading a variable is `NCvar`, which includes that variable's data and metadata. 
+
+```
+struct NCvar
+    name::String
+    units::String
+    dims
+    values
+    atts::Union{Dict,Nothing}
+    backend::Module
+end
+```
+
+Within the `NCvar` struct, the data itself can either (1) be in memory, and included directly via `values`, or can (2) be described in another data structure (`NCData` / `BinData` / `TileData` for `values`) :
+
+- `BinData` for data in binary files or an array
+- `NCData` for data in NetCDF files
+- `TileData` for e.g. tiled model output when subdomains are often written out in distributed fashion across file collections.
 
 ```julia
+struct BinData
+    fnames::Union{Array{String},String}
+    precision::Type
+    iosize::Tuple
+    fldidx::Int
+end
+
+struct NCData
+    fname::AbstractString
+    varname::AbstractString
+    backend::Module
+    precision::Type
+end
+
 struct TileData{T}
     vals::T
     tileinfo::Dict
@@ -23,15 +58,7 @@ struct TileData{T}
 end
 ```
 
-## Data Structures & Functions
-
-Higher-level APIs, which are practical for automated or distributed workflows which can be called upon e.g. as a model runs forward in time, are readily documented in the examples. Here we take a more detailed look at a basic one to document the underlying / core data structures and functionalities.
-
-The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from source files. The data structure used for writing a variable is `NCvar`, which includes that variable's data and metadata. The data itself can be in memory and included directly in the `NCvar` struct, or can be described in another data structure (`NCData` / `BinData` / `TileData`) :
-
-- `BinData` for data in binary files
-- `NCData` for data in NetCDF files
-- `TileData` for e.g. tiled model output when subdomains is often written out in distributed fashion across file collections (see [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev) for suitable Earth domain decomposition examples).
+The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref Examples) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
 
 ## Basic Example
 
@@ -128,7 +155,7 @@ write(myvar,"data/mydata.nc")
 
 Where the keys of the `Dict` should match the `name` attributes of the `NCvar` struct values.
 
-## Other Data Structures
+### NCData and TileData
 
 In the example above we wrote a NetCDF file with data sourced from Binary Files, specified by the `BinData` struct. We have a few other structs for different kinds of data:
 
