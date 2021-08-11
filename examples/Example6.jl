@@ -73,14 +73,14 @@ clim_dims = [ncdims["tcb"],
 FeT = NCvar("FeT", # name
                 "mmol Fe", # units
                 FeT_dims, # dimensions
-                NCData("input/diags_nctiles/FeT.0062.nc", "FeT", NCDatasets, Float32), # values- to be read from file
+                NCData(joinpath(inputs,"diags_nctiles/FeT.0062.nc"), "FeT", NCDatasets, Float32), # values- to be read from file
                 Dict("coordinates" => "lon lat dep tim","long_name" => "FeT concentration"), # attributes
                 NCDatasets) # backend
 
 climatology_bounds = NCvar("climatology_bounds", # name
                                 "days since 1992-1-1 0:0:0", # units
                                 clim_dims, # dimensions
-                                NCData("input/diags_nctiles/FeT.0062.nc", "climatology_bounds", NCDatasets, Float32), # values- to be read from file
+                                NCData(joinpath(inputs,"diags_nctiles/FeT.0062.nc"), "climatology_bounds", NCDatasets, Float32), # values- to be read from file
                                 Dict("long_name" => "climatology_bounds"), # attributes
                                 ncvars["climatology_bounds"].backend) # backend
 # -

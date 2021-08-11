@@ -29,7 +29,10 @@ if false
 end
 
 using NCTiles; 
-include("helper_functions.jl");
+
+p=dirname(pathof(NCTiles))
+fil = joinpath(p, "../examples/helper_functions.jl")
+include(fil);
 # -
 
 # ### File Paths & I/O Back-End
