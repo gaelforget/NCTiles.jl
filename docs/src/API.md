@@ -1,9 +1,11 @@
 # API
 
+### Index
+
 ```@index
 ```
 
-## Types and Functions
+### Docstrings
 
 ```@autodocs
 Modules = [NCTiles]
