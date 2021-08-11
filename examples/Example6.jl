@@ -1,24 +1,8 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.11.3
-#   kernelspec:
-#     display_name: Julia 1.7.0-beta3
-#     language: julia
-#     name: julia-1.7
-# ---
-
-# # Example 6
+# # Example 6 : Climatological Mean
 #
 # An example of one tile with a climatology time axis from the global ocean domain available in https://github.com/gaelforget/nctiles-testcases
 #
 
-# +
 using NCTiles,NCDatasets
 
 # File Paths
@@ -33,7 +17,6 @@ if ~ispath(savedir); mkpath(savedir); end
 
 field_name = "FeT"
 README = [field_name*" -- Source: Gael Forget; version: alpha."];
-# -
 
 # ### One tile example
 
@@ -69,7 +52,6 @@ clim_dims = [ncdims["tcb"],
 #
 # Note : lat, lon, dep, tim, thic, area, land defined same as non-climatology example
 
-# +
 FeT = NCvar("FeT", # name
                 "mmol Fe", # units
                 FeT_dims, # dimensions
@@ -83,7 +65,6 @@ climatology_bounds = NCvar("climatology_bounds", # name
                                 NCData(joinpath(inputs,"diags_nctiles/FeT.0062.nc"), "climatology_bounds", NCDatasets, Float32), # values- to be read from file
                                 Dict("long_name" => "climatology_bounds"), # attributes
                                 ncvars["climatology_bounds"].backend) # backend
-# -
 
 # Write to file
 

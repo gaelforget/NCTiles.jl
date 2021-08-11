@@ -1,23 +1,7 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.11.3
-#   kernelspec:
-#     display_name: Julia 1.7.0-beta3
-#     language: julia
-#     name: julia-1.7
-# ---
-
-# # Example 4
+# # Example 4 : Group Variables
 #
-# Two three-dimensional variables are read from the netcdf files generated in `Example3`, combined into a single data structure, and then re-written together into a new netcdf file.
+# Two variables (three-dimensional ones) are read from the netcdf files generated in `Example3`, combined into a single data structure, and then re-written together into a new netcdf file.
 
-# +
 using NCTiles, NCDatasets
 
 inputs=NCTiles.NCTILES_TESTCASES
@@ -45,5 +29,4 @@ ncvars["SALT"]=NCvar(S.name,S.units,T.dims,S.values,S.atts,T.backend)
 
 # Rewrite to a new file
 write(ncvars,file_out,README=README,globalattribs=fileatts)
-# -
 

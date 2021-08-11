@@ -1,23 +1,7 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.11.3
-#   kernelspec:
-#     display_name: Julia 1.7.0-beta3
-#     language: julia
-#     name: julia-1.7
-# ---
-
-# # Example 5
+# # Example 5 : Array Types
 #
 # A `ClimArray` (struct from `ClimateBase.jl`), which includes metadata read from nectdf file, is written back to a netcdf file via `NCTiles.jl`. Then the reverse is done to illustrate consistent workflows.
 
-# +
 using ClimateBase, NCDatasets, NCTiles, Dates
 
 # File Paths
@@ -29,7 +13,6 @@ if ~ispath(outputs); mkpath(outputs); end
 
 savedir = joinpath(outputs,"ex5")
 if ~ispath(savedir); mkpath(savedir); end
-# -
 
 # ## 1. Read via NCTiles.jl and write via ClimateBase.jl
 
@@ -55,8 +38,6 @@ end
 
 # ### Main call sequence : 
 
-# +
-
 fil=joinpath(outputs,"ex1/ex1_NetCDF.nc")
 ncvars,ncdims,fileatts = NCTiles.readncfile(fil)
 
@@ -66,7 +47,6 @@ ncvars,ncdims,fileatts = NCTiles.readncfile(fil)
 filout=joinpath(savedir,"ex5_ClimateBase.nc")
 A=NCvar_to_ClimArray(ncvars["ETAN"],ncdims)
 ClimateBase.ncwrite(filout, A)
-# -
 
 # ## 2. Read via ClimateBase.jl and write via NCTiles.jl
 #
@@ -99,7 +79,7 @@ function ClimArray_to_NCvar(C::ClimArray,N::String)
         return NCvar(N,C.attrib["units"],dims,C.data,C.attrib,NCDatasets)
 end   
 
-# ### Main call sequence : 
+# ## Main call sequence : 
 #
 # _Note: `ClimateBase.jl` relies on specific dimension names to identify space and time dimensions (as follows). This sometimes lead to warnings when files use different names._
 #
