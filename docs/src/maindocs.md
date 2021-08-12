@@ -5,9 +5,9 @@
 1. lazy operations, on data structures, to obtain information about variables without data transfer.
 1. calling the `write` function to instantiate and write files; or the `read` function for the reverse.
 
-Higher-level APIs, which are practical for automated or distributed workflows which can be called upon e.g. as a model runs forward in time, are readily documented in the [Examples](@ref Examples) section. 
+Higher-level APIs, which are practical for automated or distributed workflows, can be called upon as a model runs forward in time, for example. These are readily documented in the [Examples](@ref Examples) section. 
 
-The top level data structures is `NCvar` which contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref Data Structures) for more detail about `NCvar` and embeded data structures. 
+The top level data structures, `NCvar`, contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref Data Structures) for more detail about `NCvar` and embeded data structures. 
 
 Below we walk through a [basic example](@ref Basic Example) to further document the internals, core data structures, and functionalities.
 
