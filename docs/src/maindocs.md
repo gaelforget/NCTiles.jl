@@ -66,7 +66,7 @@ Here we show how to write a metadata-rich `NetCDF` file from a series of binary 
 
 ### Define Dimensions
 
-The first step for creating a NetCDF file is to define your dimensions. Each dimension is specified by an `NCvar`. Dimensions should be in an `Array` in the order corresponding to your variable data (if your data dimensions are lon x lat x time, dimensions should be in that order as well). In this example we have a regular half-degree lat-lon grid with 10 time steps (as in `ex_1.jl`). This is how we define the dimensions:
+The first step for creating a NetCDF file is to define your dimensions. Each dimension is specified by an `NCvar`. Dimensions should be in an `Array` in the order corresponding to your variable data (if your data dimensions are lon x lat x time, dimensions should be in that order as well). In this example we have a regular half-degree lat-lon grid with 10 time steps. This is how we define the dimensions:
 
 ```julia
 lon = -179.75:0.5:179.75
@@ -79,24 +79,20 @@ dims = [NCvar("lon","degrees_east",size(lon),lon,Dict("long_name" => "longitude"
         ]
 ```
 
-Let's go through the `NCvar` constructor. Here is the struct definition for reference:
+Let's go through the `NCvar` constructor (see [Data Structures](@ref Data Structures)). 
 
-```julia
-struct NCvar
-    name::String
-    units::String
-    dims
-    values
-    atts::Union{Dict,Nothing}
-    backend::Module
-end
-```
+The first attribute, `name`, should be a `String` and is what you want to call the variable in the file. The second are the units, which should also be a `String`. We then specify the dimensions, `dims`. For Dimension variables `dims` should be of length 1 (calling `size` on your dimension values like above if sufficient). Next you specify the actual dimension values. For a Dimension variable, this must be a 1 dimensional array, like above. After the values you can specify any additional attributes that you want to add to the variable as a dictionary. The last attribute is the backend, which allows you to choose between `NCDatasets.jl` and `NetCDF.jl`. 
 
-The first attribute, `name`, should be a `String` and is what you want to call the variable in the file. The second are the units, which should also be a `String`. We then specify the dimensions, `dims`. For Dimension variables `dims` should be of length 1 (calling `size` on your dimension values like above if sufficient). Next you specify the actual dimension values. For a Dimension variable, this must be a 1 dimensional array, like above. After the values you can specify any additional attributes that you want to add to the variable as a dictionary. The last attribute is the backend, which allows you to choose between `NCDatasets.jl` and `NetCDF.jl`. We have some support for `NetCDF.jl` and full support for `NCDatasets.jl`. Note that in creating these `NCvar` structs we do not do any CF Compliance checks, it is the user's responsibility to provide CF-compliant units.
+`NCTiles.jl` has some support for `NetCDF.jl` and most fully supports `NCDatasets.jl`. 
+
+!!! note
+    Creating `NCvar` structs does not enforce any CF Compliance check; it is the user's responsibility to provide CF-compliant units.
 
 ### Define the Data Source
 
-Once you've created the dimensions for your NetCDF file you can create `NCvar` for your variable. Here we are going to create one pointing to data that is stored in multiple Binary files, one for each time step. The first step is to create this pointer to the data, which is the `BinData` struct. For example:
+Once you've created the dimensions for your NetCDF file you can create `NCvar` for your variable. Here we are going to create one pointing to data that is stored in binary files (one file for each time step / period). 
+
+First create this pointer to the data -- the `BinData` struct documented in [Data Structures](@ref Data Structures). For example:
 
 ```julia
 precision = Float32
@@ -107,18 +103,9 @@ vardata = BinData(fnames,precision,(length(lon),length(lat)))
 # or: vardata = BinData(fnames,precision,(length(lon),length(lat)),1)
 ```
 
-And for reference, the struct definition for `BinData`:
+In order to read data from a binary file, we need to know where the files are and their names, the precision that the data is written in, and the dimensions of the data. 
 
-```julia
-struct BinData # Pointer to data stored in binary files- contains info needed to read in
-    fnames::Union{Array{String},String}
-    precision::Type
-    iosize::Tuple
-    fldidx::Int
-end
-```
-
-In order to read data from a binary file, we need to know where the files are and their names, the precision that the data is written in, and the dimensions of the data. The first argument, `fnames`, should be a single file path `String` or an `Array` of file paths `String`s. The second should be the precision that the data is written in the file, here our data is `Float32`. Precision should be a `Type`. Finally we need to know the size of the data that we are reading from the file, this should be specified as a `Tuple`. If we have multiple variables written in the same file, we can additionally specify the index of that variable, say if it's the 10th variable in the file. In this example there is only one variable in the file, so we can specify 1 or leave it out and it will be assumed to be 1.
+The first argument, `fnames`, should be a single file path `String` or an `Array` of file paths `String`s. The second should be the precision that the data is written in the file, here our data is `Float32`. Precision should be a `Type`. Finally we need to know the size of the data that we are reading from the file, this should be specified as a `Tuple`. If we have multiple variables written in the same file, we can additionally specify the index of that variable, say if it's the 10th variable in the file. In this example there is only one variable in the file, so we can specify 1 or leave it out and it will be assumed to be 1.
 
 ### Create the NCvar
 
@@ -157,7 +144,9 @@ Where the keys of the `Dict` should match the `name` attributes of the `NCvar` s
 
 ### NCData and TileData
 
-In the example above we wrote a NetCDF file with data sourced from Binary Files, specified by the `BinData` struct. We have a few other structs for different kinds of data:
+In the example above we wrote a NetCDF file with data sourced from Binary Files, specified by the `BinData` struct. 
+
+Other structs for different kinds of input data are provided; see [Data Structures](@ref Data Structures) for further documentation.
 
 - `NCData`: for data sourced from a NetCDF file
 - `TileData`: for data to be written into separate tile files
@@ -165,15 +154,6 @@ In the example above we wrote a NetCDF file with data sourced from Binary Files,
 #### NCData
 
 `NCData` structs contain the necessary information to read data from a NetCDF file.
-
-```julia
-struct NCData
-    fname::AbstractString
-    varname::AbstractString
-    backend::Module
-    precision::Type
-end
-```
 
 For example, if you wanted to use the NetCDF file created before as a data source, you would use the `NCData` constructor:
 
@@ -197,18 +177,19 @@ To re-write this exact file run:
 write(ncvars,joinpath("data/mydata2.nc"),globalattribs=fileatts)
 ```
 
-You can see this process demonstrated in `ex_2.jl`.
+You can see this process demonstrated in `Example2.jl`.
 
 ### TileData
 
-The `TileData` struct is used to chunk up data and write to separate files. We do this using the `MeshArrays` package. This is demonstrated in more detail in `ex_4.jl`. First, specify your grid and read in the grid variables:
+The `TileData` struct is used to chunk up data and write to separate files. We do this using the `MeshArrays` package. This is demonstrated in more detail in `Example3.jl`. First, specify your grid and read in the grid variables:
 
 ```julia
-grid = GridSpec("LatLonCap","grids/GRID_LLC90/")
+using MeshArrays
+grid = GridSpec("LatLonCap",MeshArrays.GRID_LLC90)
 gridvars = GridLoad(grid)
 ```
 
-Where `GridSpec()` and `GridLoad()` are from the `MeshArrays` package (you can refer to the `MeshArrays` documentation for more information about these functions and grids).
+Where `GridSpec()` and `GridLoad()` are from the `MeshArrays` package (please refer to the [MeshArrays.jl docs](https://juliaclimate.github.io/MeshArrays.jl/dev/) for more on these functions and grids).
 
 The next step is to specify the tile, or chunk, size as a `tuple`. The data is chunked in the horizontal dimension, so tile sizes should be two dimensional `tuple`. If the data is three dimensional, say its full dimension is `NxMx10` and the tile size is `nxm`, the chunks will be `nxmx10`. Here we set the tile size to `90x90`:
 
@@ -220,7 +201,7 @@ When defining dimensions for `TileData` variables, the horizontal dimensions sho
 
 ```julia
 time = 1:10
-dep = gridvars["RC"]
+dep = gridvars.RC
 dims = [
     NCvar("i_c","1",tilesize[1],1:tilesize[1],Dict("long_name" => "Cartesian coordinate 1"),NCDatasets),
     NCvar("j_c","1",tilesize[2],1:tilesize[2],Dict("long_name" => "Cartesian coordinate 2"),NCDatasets),
@@ -232,9 +213,9 @@ dims = [
 The latitude and longitude variables will be written to the file separately, their data specified by `TileData` structs:
 
 ```julia
-tillat = TileData(gridvars["YC"],tilesize,grid)
+tillat = TileData(gridvars.YC,tilesize,grid)
 varlat = NCvar("lat","degrees_north",dims[1:2],tillat,Dict("long_name" => "latitude"),NCDatasets)
-tillon = TileData(gridvars["XC"],tilesize,grid)
+tillon = TileData(gridvars.XC,tilesize,grid)
 varlon = NCvar("lon","degrees_east",dims[1:2],tillon,Dict("long_name" => "longitude"),NCDatasets)
 ```
 
