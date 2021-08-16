@@ -2,7 +2,7 @@
 #
 # A `ClimArray` (struct from `ClimateBase.jl`), which includes metadata read from nectdf file, is written back to a netcdf file via `NCTiles.jl`. Then the reverse is done to illustrate consistent workflows.
 
-using ClimateBase, NCDatasets, NCTiles, Dates
+using ClimateBase, NCDatasets, NCTiles, Dates, Unitful
 
 # File Paths
 inputs=NCTiles.NCTILES_TESTCASES
@@ -100,7 +100,8 @@ function ClimArray_to_MeshArray(C::ClimArray)
         u=uparse(C.attrib["units"])
         n=string(C.name)
         ln=C.attrib["long_name"]
-        m=varmeta(u,fill(0.5,3),n,ln)
+        tim=DateTime.(collect(tmp.dims[3][:]))        
+        m=varmeta(u,fill(0.5,3),tim,n,ln)
         #MeshArray(C.data;meta=m)
 
         nlon=length(tmp.dims[1][:])
@@ -116,7 +117,8 @@ function NCvar_to_MeshArray(ncvar::NCvar)
         u=uparse(ncvar.units)
         n=string(ncvar.name)
         ln=ncvar.atts["long_name"]
-        m=varmeta(u,fill(0.5,3),n,ln)
+        tim=ncvar.dims[3].values[:]
+        m=varmeta(u,fill(0.5,3),tim,n,ln)
         #MeshArray(ncvar.values[:];meta=m)
 
         nlon=length(ncvar.dims[1].values[:])
@@ -124,7 +126,7 @@ function NCvar_to_MeshArray(ncvar::NCvar)
         XC = MeshArray(ncvar.dims[1].values[:]*ones(1,nlon))
         YC = MeshArray(ones(nlat,1)*ncvar.dims[2].values[:]')
         Γ = (XC=XC,YC=YC)
-        
+
         MeshArray(ncvar.values[:];meta=m),Γ
 end
     
