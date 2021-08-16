@@ -92,4 +92,45 @@ ETAN = ClimArray_to_NCvar(ETAN,"ETAN")
 filout=joinpath(savedir,"ex5_ClimArray_to_NCvar.nc")
 NCTiles.write(ETAN,filout)
 
+##
 
+using MeshArrays
+
+function ClimArray_to_MeshArray(C::ClimArray)
+        u=uparse(C.attrib["units"])
+        n=string(C.name)
+        ln=C.attrib["long_name"]
+        m=varmeta(u,fill(0.5,3),n,ln)
+        #MeshArray(C.data;meta=m)
+
+        nlon=length(tmp.dims[1][:])
+        nlat=length(tmp.dims[2][:])
+        XC = MeshArray(tmp.dims[1][:]*ones(1,nlon))
+        YC = MeshArray(ones(nlat,1)*tmp.dims[2][:]')
+        Γ = (XC=XC,YC=YC)
+
+        MeshArray(C.data;meta=m),Γ
+end
+
+function NCvar_to_MeshArray(ncvar::NCvar)
+        u=uparse(ncvar.units)
+        n=string(ncvar.name)
+        ln=ncvar.atts["long_name"]
+        m=varmeta(u,fill(0.5,3),n,ln)
+        #MeshArray(ncvar.values[:];meta=m)
+
+        nlon=length(ncvar.dims[1].values[:])
+        nlat=length(ncvar.dims[2].values[:])
+        XC = MeshArray(ncvar.dims[1].values[:]*ones(1,nlon))
+        YC = MeshArray(ones(nlat,1)*ncvar.dims[2].values[:]')
+        Γ = (XC=XC,YC=YC)
+        
+        MeshArray(ncvar.values[:];meta=m),Γ
+end
+    
+fil=joinpath(outputs,"ex1/ex1_NetCDF.nc")
+tmp = ClimateBase.ncread(fil, "ETAN")
+ETAN,Γ = ClimArray_to_MeshArray(tmp)
+
+ncvars,ncdims,fileatts = NCTiles.readncfile(fil)
+ETAN,Γ = NCvar_to_MeshArray(ncvars["ETAN"])
