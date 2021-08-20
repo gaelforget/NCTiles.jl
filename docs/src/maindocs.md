@@ -5,11 +5,11 @@
 1. lazy operations, on data structures, to obtain information about variables without data transfer.
 1. calling the `write` function to instantiate and write files; or the `read` function for the reverse.
 
-Higher-level APIs, which are practical for automated or distributed workflows, can be called upon as a model runs forward in time, for example. These are readily documented in the [Examples](@ref Examples) section. 
+Higher-level APIs, which are practical for automated or distributed workflows, can be called upon as a model runs forward in time, for example. These are readily documented in the [Examples](@ref) section. 
 
-The top level data structures, `NCvar`, contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref Data Structures) for more detail about `NCvar` and embeded data structures. 
+The top level data structures, `NCvar`, contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref) for more detail about `NCvar` and embeded data structures. 
 
-Below we walk through a [basic example](@ref Basic Example) to further document the internals, core data structures, and functionalities.
+Below we walk through a [basic example](@ref) to further document the internals, core data structures, and functionalities.
 
 ## Data Structures
 
@@ -58,7 +58,7 @@ struct TileData{T}
 end
 ```
 
-The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref Examples) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
+The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
 
 ## Basic Example
 
@@ -79,7 +79,7 @@ dims = [NCvar("lon","degrees_east",size(lon),lon,Dict("long_name" => "longitude"
         ]
 ```
 
-Let's go through the `NCvar` constructor (see [Data Structures](@ref Data Structures)). 
+Let's go through the `NCvar` constructor (see [Data Structures](@ref)). 
 
 The first attribute, `name`, should be a `String` and is what you want to call the variable in the file. The second are the units, which should also be a `String`. We then specify the dimensions, `dims`. For Dimension variables `dims` should be of length 1 (calling `size` on your dimension values like above if sufficient). Next you specify the actual dimension values. For a Dimension variable, this must be a 1 dimensional array, like above. After the values you can specify any additional attributes that you want to add to the variable as a dictionary. The last attribute is the backend, which allows you to choose between `NCDatasets.jl` and `NetCDF.jl`. 
 
@@ -92,7 +92,7 @@ The first attribute, `name`, should be a `String` and is what you want to call t
 
 Once you've created the dimensions for your NetCDF file you can create `NCvar` for your variable. Here we are going to create one pointing to data that is stored in binary files (one file for each time step / period). 
 
-First create this pointer to the data -- the `BinData` struct documented in [Data Structures](@ref Data Structures). For example:
+First create this pointer to the data -- the `BinData` struct documented in [Data Structures](@ref). For example:
 
 ```julia
 precision = Float32
@@ -146,7 +146,7 @@ Where the keys of the `Dict` should match the `name` attributes of the `NCvar` s
 
 In the example above we wrote a NetCDF file with data sourced from Binary Files, specified by the `BinData` struct. 
 
-Other structs for different kinds of input data are provided; see [Data Structures](@ref Data Structures) for further documentation.
+Other structs for different kinds of input data are provided; see [Data Structures](@ref) for further documentation.
 
 - `NCData`: for data sourced from a NetCDF file
 - `TileData`: for data to be written into separate tile files
