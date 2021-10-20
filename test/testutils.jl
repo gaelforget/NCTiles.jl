@@ -100,7 +100,7 @@ function testfile(fname,checkfld)
         itile = Int(ds.attrib["itile"])
         varcheck["values"] = true
         grid = checkfld.values.tileinfo["XC"].grid
-        gridvars = GridLoad(grid)
+        gridvars = GridLoad(grid; option="full")
         land = gridvars.hFacC
         for f in land.fIndex
             for d in 1:size(land,2)

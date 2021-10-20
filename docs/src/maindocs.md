@@ -5,11 +5,11 @@
 1. lazy operations, on data structures, to obtain information about variables without data transfer.
 1. calling the `write` function to instantiate and write files; or the `read` function for the reverse.
 
-Higher-level APIs, which are practical for automated or distributed workflows, can be called upon as a model runs forward in time, for example. These are readily documented in the [Examples](@ref) section. 
+Higher-level APIs, which are practical for automated or distributed workflows, can be called upon as a model runs forward in time, for example. These are readily documented in the [Use Examples](@ref) section. 
 
 The top level data structures, `NCvar`, contains information needed to write a NetCDF file from e.g. a list of filenames. See [Data Structures](@ref) for more detail about `NCvar` and embeded data structures. 
 
-Below we walk through a [basic example](@ref) to further document the internals, core data structures, and functionalities.
+Below we walk through a [Basic Example](@ref) to further document the internals, core data structures, and functionalities.
 
 ## Data Structures
 
@@ -58,7 +58,7 @@ struct TileData{T}
 end
 ```
 
-The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
+The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Use Examples](@ref) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
 
 ## Basic Example
 
