@@ -125,8 +125,8 @@ function readncfile(fname,backend::Module=NCDatasets)
     else
         ds = Dataset(fname)
 
-        dims = Dict{AbstractString,NCvar}()
-        vars = Dict{AbstractString,NCvar}()
+        dims = Dict{String,NCvar}()
+        vars = Dict{String,NCvar}()
 
         for k in keys(ds)
             if ~haskey(dims,k)
@@ -202,8 +202,8 @@ function readncfile_NetCDF(fname)
     filvars = ncfile.vars
     fildims = ncfile.dim
 
-    dims = Dict{AbstractString,NCvar}()
-    vars = Dict{AbstractString,NCvar}()
+    dims = Dict{String,NCvar}()
+    vars = Dict{String,NCvar}()
 
     for d in keys(fildims)
         d_units = get(filvars[d].atts,"units","")

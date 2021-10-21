@@ -567,9 +567,10 @@ end
 
 Creates NetCDF file and writes myflds and all their dimensions to the file.
 """
-function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",globalattribs=Dict())
+function write(myflds::Dict{String,NCvar},savename::String;README="",globalattribs=Dict())
 
     if hastiledata(myflds)
+
         fldnames = collect(keys(myflds))
         tilefld = myflds[fldnames[findfirst([hastiledata(myflds[f]) for f in fldnames])]]
         numtiles = tilefld.values.numtiles
@@ -615,6 +616,7 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
         end
 
     else
+
         dims = getdims(myflds)
 
         ## Here down to move to other branch- high level API for writing
@@ -644,4 +646,4 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
     end
 end
 
-write(myflds::Dict,savename::String;README="",globalattribs=Dict()) = write(Dict{AbstractString,NCvar}(myflds),savename;README="",globalattribs=Dict())
+write(myflds::Dict,savename::String;README="",globalattribs=Dict()) = write(Dict{String,NCvar}(myflds),savename;README="",globalattribs=Dict())
