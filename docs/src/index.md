@@ -6,8 +6,9 @@ Goals of [NCTiles.jl](https://github.com/gaelforget/NCTiles.jl) include (1) inte
 
 ```@contents
 Pages = [
-    "maindocs.md",
     "examples.md",
+    "maindocs.md",
+    "API.md",
 ]
 Depth = 2
 ```

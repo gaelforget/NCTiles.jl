@@ -1,6 +1,6 @@
-# Use Examples
+# Examples
 
-One series of tutorial examples is provided [over here](https://nbviewer.jupyter.org/github/JuliaClimate/GlobalOceanNotebooks/blob/master/DataStructures/03_nctiles.ipynb) in the [GlobalOceanNotebooks](https://github.com/gaelforget/GlobalOceanNotebooks/) sandbox.
+One series of use examples is provided [over here](https://nbviewer.jupyter.org/github/JuliaClimate/GlobalOceanNotebooks/blob/master/DataStructures/03_nctiles.ipynb) in the [JuliaClimate Notebooks](https://juliaclimate.github.io/GlobalOceanNotebooks/).
 
 More detailed examples listed below rely on the [nctiles-testcases](https://github.com/gaelforget/nctiles-testcases) and are found in the `NCTiles.jl/examples/` folder.
 
