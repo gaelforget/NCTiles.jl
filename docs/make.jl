@@ -21,11 +21,11 @@ makedocs(
     format = Documenter.HTML(),
    pages=[
         "Home" => "index.md",
-        "maindocs.md",
         "Examples" => Any[
             "Guide " => "examples.md",
             "Listing" => [map(s -> "generated/$(s[1:end-2])md",lst)...],
             ],
+        "maindocs.md",
         "API.md"],
     modules = [NCTiles]
 )
