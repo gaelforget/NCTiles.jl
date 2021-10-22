@@ -1,9 +1,23 @@
 
 """
+    NCT
+
+Data structure containing information needed to write a NetCDF file.
+
+"""
+struct NCT
+    lon
+    lat
+    data
+    meta
+end
+
+"""
     NCvar
 
-Data structure containing information needed to write a NetCDF file. This
-includes a list of filenames (see `Bindata`) if the data is not loaded into memory.
+Data structure containing information needed to write a variable to NetCDF files. 
+
+Instead of loading the data into memory, one can provide a list of input file names (see `Bindata`).
 """
 struct NCvar
     name::String
@@ -422,6 +436,8 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
         end
     end
 
+    #test_climatology_bounds=sum(occursin.(fldnames,"climatology_bounds"))
+
     if isa(fldnames,Array)
         fldnamestring = join(filter(x -> x !== "climatology_bounds", fldnames),",")
     else
@@ -487,6 +503,8 @@ function createfile(filename, field::Union{NCvar,Dict}, rdm="";
         return ds,fieldvar,dimlist
     elseif backend == NetCDF
         dimlist = addDim.(dims)
+        #test_climatology_bounds ? addVar(f,dimlist[dimidx]) : nothing
+
         if isa(field,Array)
             dimnames = getfield.(dims,:name)
             field = filter(f ->~any(f.name.==dimnames),field) # need to get dimlist for each variable
@@ -508,6 +526,62 @@ end
 
 import Base: write
 using Pkg
+
+write(nct::NCT) = write_2D_clim(nct.lon,nct.lat,nct.data,nct.meta)
+
+function write_2D_clim(lon,lat,data,meta)
+	nc=NCTiles.NetCDF #backend
+
+	#1. pre-define dimensions
+	lon_c=NCvar("lon","degrees_east",size(lon,1),lon[:,1],Dict("long_name" => "longitude"),nc)
+	lat_c=NCvar("lat","degrees_north",size(lat,2),lat[1,:],Dict("long_name" => "latitude"),nc)
+
+	yrng=meta.yearrange
+	tim_units="days since $(yrng[1])-1-1 0:0:0"
+	tim_values=NCTiles.DateTime.(yrng[1],collect(1:12),16)
+	tim_bounds=permutedims([DateTime.(yrng[1],collect(1:12)) [DateTime.(yrng[2],collect(2:12));DateTime.(yrng[2]+1,1)]],(2,1))
+
+    nt=length(tim_values)
+    t_values=Float64.(collect(1:nt))
+	t=NCvar("t", "1", nt, t_values, Dict("units" => "1","long_name" => "Time coordinate"), nc)
+	dims = [lon_c, lat_c, t]
+
+    globalattribs=Dict("_FillValue" => NaN,"missing_value" => NaN,"itile" => 1.0,"ntile" => 1.0)
+
+	#2. put climatology from Array into NCvar with meta-data
+	ncv = NCvar(meta.name,meta.units,dims,data, Dict("long_name" => meta.long_name),nc)
+
+	#3. prepare inputs to `write` method
+	msk=Float64.(isnan.(data[:,:,1]))
+	land=NCvar("land","1.0",dims[1:2],msk,Dict(["long_name" => "land mask", 
+				"standard_name" => "land_binary_mask"]), nc)	
+	#msk=Float64.(isnan.(data))
+	#land=NCvar("land","1.0",dims,data,Dict("long_name" => "land mask", 
+	#			"standard_name" => "land_binary_mask"]), nc)	
+	
+	writevars = Dict([meta.name => ncv,"land" => land, 
+			"lon" => lon_c, "lat" => lat_c, "t" => dims[3]])
+#                "dep" => dep,"thic" => thic,"area" => area,
+	
+	#4. create and instantiate the new file
+	rm(meta.outputfile,force=true)
+	write(writevars,meta.outputfile;README=meta.README,globalattribs=globalattribs)
+	
+	#5. add climatology_bounds and tim afterwards
+	ds = Dataset(meta.outputfile,"a")
+	defDim(ds,"tcb",2)
+
+	v = defVar(ds,"climatology_bounds",Float32,("tcb","t"), 
+	attrib = Dict("units" => tim_units, "long_name" => "climatology_bounds"))
+	v[:,:] = tim_bounds
+
+	v = defVar(ds,"tim",Float32,("t",), attrib = Dict("units" => tim_units, 
+    "climatology" => "climatology_bounds", "long_name" => "time", "standard_name" => "time"))
+	v[:] = tim_values
+
+	close(ds)
+end
+
 """
     write(myfld::NCvar,savename::String;README="",globalattribs=Dict())
 
@@ -567,9 +641,10 @@ end
 
 Creates NetCDF file and writes myflds and all their dimensions to the file.
 """
-function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",globalattribs=Dict())
+function write(myflds::Dict{String,NCvar},savename::String;README="",globalattribs=Dict())
 
     if hastiledata(myflds)
+
         fldnames = collect(keys(myflds))
         tilefld = myflds[fldnames[findfirst([hastiledata(myflds[f]) for f in fldnames])]]
         numtiles = tilefld.values.numtiles
@@ -615,6 +690,7 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
         end
 
     else
+
         dims = getdims(myflds)
 
         ## Here down to move to other branch- high level API for writing
@@ -644,4 +720,4 @@ function write(myflds::Dict{AbstractString,NCvar},savename::String;README="",glo
     end
 end
 
-write(myflds::Dict,savename::String;README="",globalattribs=Dict()) = write(Dict{AbstractString,NCvar}(myflds),savename;README="",globalattribs=Dict())
+write(myflds::Dict,savename::String;README="",globalattribs=Dict()) = write(Dict{String,NCvar}(myflds),savename;README="",globalattribs=Dict())

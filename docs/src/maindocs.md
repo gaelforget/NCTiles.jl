@@ -1,4 +1,4 @@
-# User Guide
+# Internals
 
 `NCTiles.jl` generally operates in two steps:
 
