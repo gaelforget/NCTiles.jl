@@ -1,7 +1,7 @@
 module NCTiles
 
-using NCDatasets,NetCDF,MeshArrays
-using Dates,Printf,Pkg, Pkg.Artifacts
+using NCDatasets, NetCDF, MeshArrays
+using Dates, Printf, Pkg, LazyArtifacts
 #using MITgcmTools
 
 version()=Pkg.TOML.parsefile(joinpath(dirname(pathof(NCTiles)), "..", "Project.toml"))["version"]
