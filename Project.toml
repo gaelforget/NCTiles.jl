@@ -1,10 +1,11 @@
 name = "NCTiles"
 uuid = "4c1fdd90-559f-11e9-1abf-07ceafc4ffc0"
 authors = ["Gael Forget", "Lauren Milechin"]
-version = "0.1.13"
+version = "0.1.14"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 MeshArrays = "cb8c808f-1acf-59a3-9d2b-6e38d009f683"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
