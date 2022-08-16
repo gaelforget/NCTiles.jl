@@ -106,8 +106,8 @@ function ClimArray_to_MeshArray(C::ClimArray)
 
         nlon=length(tmp.dims[1][:])
         nlat=length(tmp.dims[2][:])
-        XC = MeshArray(tmp.dims[1][:]*ones(1,nlon))
-        YC = MeshArray(ones(nlat,1)*tmp.dims[2][:]')
+        XC = MeshArray(collect(tmp.dims[1][:])*ones(1,nlon))
+        YC = MeshArray(ones(nlat,1)*collect(tmp.dims[2][:])')
         Γ = (XC=XC,YC=YC)
 
         MeshArray(C.data;meta=m),Γ
