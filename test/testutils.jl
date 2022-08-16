@@ -186,8 +186,9 @@ end
 Create test data on a simple, coarse-grained Earth grid.
 """
 function maketestdata()
-    lon=-180:20:180; lat=-90:20:90;
-    depth = 5:10:100
+    lon=collect(-180:20:180)
+    lat=collect(-90:20:90)
+    depth = collect(5:10:100)
     n1,n2,n3 = (length(lon),length(lat),length(depth))
 
     timeinterval = 1
@@ -231,8 +232,8 @@ function maketestdata()
     dep = -1 .* collect([-5 -15 -25 -35 -45 -55 -65 -75.0049972534180 -85.0250015258789 -95.0950012207031 -105.309997558594 -115.870002746582 -127.150001525879 -139.740005493164 -154.470001220703 -172.399993896484 -194.735000610352 -222.710006713867 -257.470001220703 -299.929992675781 -350.679992675781 -409.929992675781 -477.470001220703 -552.710021972656 -634.734985351563 -722.400024414063 -814.469970703125 -909.739990234375 -1007.15502929688 -1105.90502929688 -1205.53503417969 -1306.20495605469 -1409.15002441406  -1517.09497070313 -1634.17504882813 -1765.13500976563 -1914.15002441406 -2084.03491210938 -2276.22509765625 -2491.25000000000 -2729.25000000000 -2990.25000000000 -3274.25000000000 -3581.25000000000 -3911.25000000000 -4264.25000000000 -4640.25000000000 -5039.25000000000 -5461.25000000000 -5906.25000000000]')
     tile_ex = Dict(["tilesize" => tilesize,
                     "grid" => grid,
-                    "dims" =>   [NCvar("i_c","1",tilesize[1],1:tilesize[1],Dict("long_name" => "Cartesian coordinate 1"),NCDatasets),
-                                NCvar("j_c","1",tilesize[2],1:tilesize[2],Dict("long_name" => "Cartesian coordinate 2"),NCDatasets),
+                    "dims" =>   [NCvar("i_c","1",tilesize[1],collect(1:tilesize[1]),Dict("long_name" => "Cartesian coordinate 1"),NCDatasets),
+                                NCvar("j_c","1",tilesize[2],collect(1:tilesize[2]),Dict("long_name" => "Cartesian coordinate 2"),NCDatasets),
                                 NCvar("dep_c","m",size(dep),dep,Dict("long_name" => "depth","standard_name" => "depth","positive" => "down"),NCDatasets),
                                 NCvar("tim","days since 1992-1-1 0:0:0",Inf,time_steps,Dict(("long_name" => "time","standard_name" => "time")),NCDatasets)],
                     "fnamestile2d" => fnamestile2d

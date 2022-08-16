@@ -407,7 +407,7 @@ Add dimension data to predefined dimensions in a NetCDF file.
 """
 function addDimData(ds,dimvar::NCvar)
     atts = merge(Dict(("units" =>dimvar.units)),dimvar.atts)
-    defVar(ds,dimvar.name,dimvar.values[:],(dimvar.name,),attrib=atts)
+    defVar(ds,dimvar.name,collect(dimvar.values[:]),(dimvar.name,),attrib=atts)
 end
 
 """
