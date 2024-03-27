@@ -1,4 +1,4 @@
-using MeshArrays, MITgcmTools
+using MeshArrays, MITgcm
 # this is needed cause writeNetCDFtiles uses `name` etc
 
 """

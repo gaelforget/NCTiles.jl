@@ -27,6 +27,7 @@ makedocs(
             ],
         "maindocs.md",
         "API.md"],
+    warnonly = [:cross_references,:missing_docs],
     modules = [NCTiles]
 )
 
