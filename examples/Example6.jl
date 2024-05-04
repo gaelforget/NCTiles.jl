@@ -3,7 +3,8 @@
 # An example of one tile with a climatology time axis from the global ocean domain available in https://github.com/gaelforget/nctiles-testcases
 #
 
-using NCTiles,NCDatasets
+using NCTiles
+import NCTiles: NCDatasets, Dates
 
 # File Paths
 inputs=NCTiles.NCTILES_TESTCASES
@@ -16,7 +17,8 @@ savedir = joinpath(outputs,"ex6")
 if ~ispath(savedir); mkpath(savedir); end
 
 field_name = "FeT"
-README = [field_name*" -- Source: Gael Forget; version: alpha."];
+
+README = ["File created by","example 1 of NCTiles.jl","on "*string(Dates.now())]
 
 # ### One tile example
 

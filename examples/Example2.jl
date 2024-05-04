@@ -2,7 +2,8 @@
 #
 # Two-dimensional fields are read from the netcdf file generated in `Example1`, and then re-written to a new netcdf file.
 
-using NCTiles,NetCDF
+using NCTiles
+import NCTiles: NetCDF, Dates
 
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
@@ -17,7 +18,7 @@ file_in=outputs*"ex1/ex1_NCDatasets.nc"
 file_out=outputs*"ex2/ex2_NCDatasets.nc"
 if ~ispath(outputs*"ex2/"); mkpath(outputs*"ex2/"); end
 
-README = readlines(joinpath(inputs,"README"))
+README = ["File created by","example 2 of NCTiles.jl","on "*string(Dates.now())]
 
 # Get all the metadata from the file and set up NCvars
 ncvars,ncdims,fileatts = readncfile(file_in)
