@@ -18,6 +18,20 @@ end
 Data structure containing information needed to write a variable to NetCDF files. 
 
 Instead of loading the data into memory, one can provide a list of input file names (see `Bindata`).
+
+Attributes (`atts`) : 1. string attributes will be writen to netcdf files; 2. a function attribute 
+called "readdata"NCTiles.readata will be used instead of the `NCTiles.readata` default.
+
+```
+struct NCvar
+    name::String
+    units::String
+    dims
+    values
+    atts::Union{Dict,Nothing}
+    backend::Module
+end
+```
 """
 struct NCvar
     name::String
@@ -45,6 +59,15 @@ replacevalues(vals,ncvar::NCvar) = NCvar(ncvar.name,ncvar.units,ncvar.dims,vals,
 
 Data structure containing a string or an array of strings (NetCDF
     file names) as well as metadata needed to read a file.
+
+```
+struct BinData
+    fnames::Union{Array{String},String}
+    precision::Type
+    iosize::Tuple
+    fldidx::Int
+end
+```    
 """
 struct BinData # Pointer to data stored in binary files- contains info needed to read in
     fnames::Union{Array{String},String}
@@ -71,6 +94,15 @@ end
 
 Data structure containing a string or an array of strings (file names) of
     NetCDF files as well as information needed to read a file.
+
+```
+struct NCData
+    fname::AbstractString
+    varname::AbstractString
+    backend::Module
+    precision::Type
+end
+```    
 """
 struct NCData
     fname::AbstractString
@@ -85,6 +117,16 @@ end
 Data structure containing either a `MeshArray` struct or `BinData` struct (see `vals`),
     `MeshArray` structs describing the tile layout (`tileinfo`), and other information for
     reading/writing tile data.
+
+```
+struct TileData{T}
+    vals::T
+    tileinfo::Dict
+    tilesize::Tuple
+    precision::Type
+    numtiles::Int
+end
+```        
 """
 struct TileData{T}
     vals::T
@@ -114,7 +156,9 @@ function TileData(vals,tilesize::Tuple,grid::gcmgrid)
     tileinfo["YC"]=gridvars.YC
     return TileData(vals,tileinfo,tilesize,prec,Int(maximum(tileinfo["tileNo"])))
 end
+
 TileData(vals,tilesize::Tuple,grid::String="LatLonCap") = TileData(vals,tilesize::Tuple,GridSpec(grid))
+
 """
     replacevalues(vals,td::TileData)
 
@@ -181,17 +225,21 @@ function addDim(dimvar::NCvar) #NetCDF
             unlimited = dimvar.dims==Inf)
 end
 
+onlystrings(x)=filter( p->isa(p[2],String) , x)
+
 """
     addVar(ds::NCDatasets.Dataset,field::NCvar)
 
 Add a variable to a NetCDF file using `NCDatasets.jl`
 """
 function addVar(ds::NCDatasets.Dataset,field::NCvar)
+    atts=onlystrings(
     if ~isempty(field.units)
         atts = merge(Dict(("units" =>field.units)),field.atts)
     else
         atts = field.atts
     end
+    )
     if isa(field.values,Array)
         if isa(field.values[1],Array)
             prec = typeof(field.values[1][1])
@@ -285,7 +333,8 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
         if isa(var.values,Array)
             v0 = var.values
         else
-            v0 = readdata(var.values,:)
+            haskey(var.atts,"readdata") ? rd=var.atts["readdata"] : rd=readdata
+            v0 = rd(var.values,:)
         end
 
         if ~isnothing(land_mask)
@@ -323,9 +372,10 @@ function addData(v::Union{NCDatasets.CFVariable,NetCDF.NcVar,Array},var::NCvar;s
                 fnames = [var.values.fnames]
             end
         end
+        haskey(var.atts,"readdata") ? rd=var.atts["readdata"] : rd=readdata
             for i = startidx:nsteps
                 if isBinData || isNCData || isTileData
-                    v0 = readdata(var.values,i)
+        		    v0 = rd(var.values,i)
                 else
                     v0 = var.values[i]
                 end
@@ -380,7 +430,8 @@ function writetiles(v,var,tilenum,timeidx=1,land_mask=nothing)
     if isa(var.values.vals,MeshArray) || isa(var.values.vals,MeshArrays.gcmfaces)
         v0 = var.values.vals
     else
-        v0 = readdata(var.values,timeidx)
+        haskey(var.atts,"readdata") ? rd=var.atts["readdata"] : rd=readdata
+        v0 = rd(var.values,timeidx)
     end
 
     v0 = gettile(v0,tileinfo,tilesize,tilenum)

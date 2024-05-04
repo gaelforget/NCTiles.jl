@@ -6,7 +6,8 @@
 # 
 # This example illustrates the use of either `NCDatasets.jl` or `NetCDF.jl` as the backend.
 
-using NCTiles, NCDatasets, NetCDF
+using NCTiles
+import NCTiles: NCDatasets, NetCDF, Dates
 
 # ### File Paths
 inputs=NCTiles.NCTILES_TESTCASES
@@ -25,7 +26,7 @@ if ~ispath(savedir); mkpath(savedir); end
 # ### Grid specifications & Metadata
 
 prec = Float32
-README = readlines(joinpath(inputs,"README"))
+README = ["File created by","example 1 of NCTiles.jl","on "*string(Dates.now())]
 lon=-179.75:0.5:179.75; lat=-89.75:0.5:89.75;
 n1,n2 = (length(lon),length(lat))
 tim_units = "days since 1992-01-01"

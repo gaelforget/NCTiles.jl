@@ -2,7 +2,7 @@
 #
 # A `ClimArray` (struct from `ClimateBase.jl`), which includes metadata read from nectdf file, is written back to a netcdf file via `NCTiles.jl`. Then the reverse is done to illustrate consistent workflows.
 
-using ClimateBase, NCDatasets, NCTiles, Dates, Unitful
+using ClimateBase, NCTiles, Unitful, NCDatasets, Dates
 
 # File Paths
 inputs=NCTiles.NCTILES_TESTCASES

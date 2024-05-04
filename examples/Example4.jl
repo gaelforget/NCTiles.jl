@@ -2,7 +2,8 @@
 #
 # Two variables (three-dimensional ones) are read from the netcdf files generated in `Example3`, combined into a single data structure, and then re-written together into a new netcdf file.
 
-using NCTiles, NCDatasets
+using NCTiles
+import NCTiles: NCDatasets, Dates
 
 inputs=NCTiles.NCTILES_TESTCASES
 NCTiles.ensure_testcases_installed()
@@ -16,7 +17,7 @@ file_in2=outputs*"ex3/SALT/SALT.$nt.nc"
 file_out=outputs*"ex4/TS.$nt.nc"
 if ~ispath(outputs*"ex4/"); mkpath(outputs*"ex4/"); end
 
-README = readlines(joinpath(inputs,"README"))
+README = ["File created by","example 4 of NCTiles.jl","on "*string(Dates.now())]
 
 # Get the first 3D variable
 ncvars,ncdims,fileatts = readncfile(file_in1)

@@ -5,7 +5,8 @@
 # ### Packages & Helper Functions
 #
 
-using NCTiles; 
+using NCTiles
+import NCTiles: Dates
 
 p=dirname(pathof(NCTiles))
 fil = joinpath(p, "../examples/helper_functions.jl")
@@ -29,7 +30,7 @@ nc=NCTiles.NCDatasets # I/O Back-End
 # _Note: on a `C-grid` these components are staggered in space._
 
 writedir=outputs
-readme = readlines(inputs)
+readme = ["File created by","example 3 of NCTiles.jl","on "*string(Dates.now())]
 
 # ### 2D example
 (flds,savename,readme)=prep_nctiles_native(inputs,"state_2d_set1","ETAN",Float32)
