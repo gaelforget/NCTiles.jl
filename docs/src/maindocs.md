@@ -15,50 +15,13 @@ Below we walk through a [Basic Example](@ref) to further document the internals,
 
 The core functionality of NCTiles comes from a series of data structures that contain the information needed write to NetCDF files. This includes the information and methods needed to read from source files. 
 
-The data structure used for writing or reading a variable is `NCvar`, which includes that variable's data and metadata. 
+The data structure used for writing or reading a variable is [`NCvar`](@ref), which includes that variable's data and metadata. Within the [`NCvar`](@ref) struct, the data itself can either (1) be in memory, and included directly via `values`, or can (2) be described using another data structure :
 
-```
-struct NCvar
-    name::String
-    units::String
-    dims
-    values
-    atts::Union{Dict,Nothing}
-    backend::Module
-end
-```
+- [`BinData`](@ref) for data in binary files or an array
+- [`NCData `](@ref) for data in NetCDF files
+- [`TileData`](@ref) for e.g. tiled model output
 
-Within the `NCvar` struct, the data itself can either (1) be in memory, and included directly via `values`, or can (2) be described in another data structure (`NCData` / `BinData` / `TileData` for `values`) :
-
-- `BinData` for data in binary files or an array
-- `NCData` for data in NetCDF files
-- `TileData` for e.g. tiled model output when subdomains are often written out in distributed fashion across file collections.
-
-```julia
-struct BinData
-    fnames::Union{Array{String},String}
-    precision::Type
-    iosize::Tuple
-    fldidx::Int
-end
-
-struct NCData
-    fname::AbstractString
-    varname::AbstractString
-    backend::Module
-    precision::Type
-end
-
-struct TileData{T}
-    vals::T
-    tileinfo::Dict
-    tilesize::Tuple
-    precision::Type
-    numtiles::Int
-end
-```
-
-The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
+The `vals` field in `TileData` can be a `MeshArray` or a `BinData`. In tiled model output (`TileData`), subdomains from a global grid are written out to file collections. Information about the tile layout is in `tileinfo`, `tilesize`, and `numtiles`. See [Examples](@ref) for suitable Earth domain decomposition examples using [MeshArrays](https://juliaclimate.github.io/MeshArrays.jl/dev).
 
 ## Basic Example
 
